@@ -799,7 +799,8 @@ void dpow_loop(void *arg)
             {
                 iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
                 endmilli = startmilli + 20;
-                iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
+                if ( rand() % 100 < 50 )
+                    iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
             }
         }
         while ( OS_milliseconds() < endmilli )
