@@ -444,7 +444,7 @@ void iguana_update_balances(struct supernet_info *myinfo,struct iguana_info *coi
         {
             if ( (bp= coin->bundles[i]) == 0 )
                 continue;
-            if ( (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,convertflag,0)) >= 0 ) //bp->utxofinish > 1 || 
+            if ( (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,convertflag,0)) >= 0 ) //bp->utxofinish > 1 ||
             {
                 if ( retval > 0 )
                 {
@@ -1135,14 +1135,19 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->enableCACHE = 1;//0;//(strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
-	
+
 	coin->sapling = (strcmp("KMD",coin->symbol) == 0);
 	if (jobj(json, "sapling") != 0)
 	{
 		coin->sapling = juint(json, "sapling");
 		printf("[Decker] %s sapling = %d\n", symbol, coin->sapling);
 	}
-    
+  if (jobj(json, "notarypay") != 0)
+	{
+		coin->notarypay = juint(json, "notarypay");
+    // Exempt main chain from this after testing! FIXME...
+		printf("[blackjok3r] %s notarypay = %d\n", symbol, coin->notarypay);
+	}
 	if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
         coin->polltimeout = IGUANA_DEFAULT_POLLTIMEOUT;
     coin->active = juint(json,"active");
@@ -1291,4 +1296,3 @@ char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *dest
     printf("busdata_sync.(%s)\n",jsonstr);
     return(0);
 }
-

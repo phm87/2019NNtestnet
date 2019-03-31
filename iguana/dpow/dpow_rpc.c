@@ -103,6 +103,22 @@ uint32_t dpow_CCid(struct supernet_info *myinfo,struct iguana_info *coin)
     return(CCid);
 }
 
+int8_t dpow_checknotarization(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char *retstr; int8_t result = 0;
+    if ( coin->FULLNODE < 0 )
+    {
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"checknotarization","")) != 0 )
+        {
+            //printf("RESULT.(%s)\n",retstr);
+            if ( strcmp(retstr, "true") == 0)
+                result = 1;
+            free(retstr);
+        } // else printf("%s null retstr from (%s)n",coin->symbol,buf);
+    }
+    return(result);
+}
+
 char *Notaries_elected[65][2];
 //char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146", "27.50.93.252", "176.9.0.233", "94.102.63.227", "167.114.227.223", "27.50.68.219", "192.99.233.217", "94.102.63.217", "45.64.168.216" };
 int32_t Notaries_numseeds;// = (int32_t)(sizeof(seeds)/sizeof(*seeds))
@@ -302,11 +318,11 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 ppMoMheight = jint(srcinfojson,"ppMoMheight");
             free_json(srcinfojson);
             //printf("ppMoMheight.%i CCid.%i\n", ppMoMheight, CCid);
-        } 
+        }
 #if STAKED
         int8_t MoMoMdelay = 5;
         int8_t ccid_ex = 1;
-#else 
+#else
         int8_t MoMoMdelay = 0;
         int8_t ccid_ex = 0;
 #endif */
@@ -318,13 +334,13 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 kmdheight = jint(infojson,"blocks");
                 free_json(infojson);
             }
-            // 5 block delay is easily enough most of the time. In rare case KMD is reorged more than this, 
-            // the backup notary validation can be used to complete the import.            
+            // 5 block delay is easily enough most of the time. In rare case KMD is reorged more than this,
+            // the backup notary validation can be used to complete the import.
             if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight-5,bp->CCid)) != 0 )
             {
                 /*if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
                 {
-                    // MoMoM returned NULL when after 2 MoM exist on the chain. 
+                    // MoMoM returned NULL when after 2 MoM exist on the chain.
                     free_json(retjson);
                     return(-1);
                 } */
@@ -552,7 +568,7 @@ int32_t dpow_txconfirms(struct supernet_info *myinfo,struct iguana_info *coin,bi
         memcpy(rawtx, jstr(txobj, "hex"), strlen(jstr(txobj, "hex"))+1);
         if ( (confirms= juint(txobj, "confirmations")) != 0 )
             ret = confirms;
-        else if ( confirms == 1 && juint(txobj, "rawconfirmations") > 100 ) 
+        else if ( confirms == 1 && juint(txobj, "rawconfirmations") > 100 )
             ret = 100;
         else
             ret = 0;
