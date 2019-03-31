@@ -503,7 +503,7 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( bp->srccoin->notarypay != 0 )
         {
-            if ( dpow_checknotarization(minfo, bp->srccoin) == 0 )
+            if ( dpow_checknotarization(myinfo, bp->srccoin) == 0 )
             {
                 printf("[%s] notary pay fund is empty, need to send coins to <burn address>\n", bp->srccoin->symbol);
                 portable_mutex_lock(&dpowT_mutex);
