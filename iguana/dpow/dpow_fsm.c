@@ -501,19 +501,16 @@ void dpow_statemachinestart(void *ptr)
     }
     else
     {
-        if ( bp->srccoin->notarypay != 0 )
+        if ( bp->srccoin->notarypay != 0 && dpow_checknotarization(myinfo, bp->srccoin) == 0)
         {
-            if ( dpow_checknotarization(myinfo, bp->srccoin) == 0 )
-            {
-                printf("[%s] notary pay fund is empty, need to send coins to <burn address>\n", bp->srccoin->symbol);
-                portable_mutex_lock(&dpowT_mutex);
-                dp->blocks[blockindex] = 0;
-                bp->state = 0xffffffff;
-                free(bp);
-                portable_mutex_unlock(&dpowT_mutex);
-                free(ptr);
-                return;
-            }
+            printf("[%s] notary pay fund is empty, need to send coins to: REDVp3ox1pbcWYCzySadfHhk8UU3HM4k5x\n", bp->srccoin->symbol);
+            portable_mutex_lock(&dpowT_mutex);
+            dp->blocks[blockindex] = 0;
+            bp->state = 0xffffffff;
+            free(bp);
+            portable_mutex_unlock(&dpowT_mutex);
+            free(ptr);
+            return;
         }
         if ( dpow_haveutxo(myinfo,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) > 0 )
         {
