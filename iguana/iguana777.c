@@ -1191,6 +1191,35 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     return(coin);
 }
 
+int32_t iguana_checkwallet(struct supernet_info *myinfo, struct iguana_info *coin)
+{
+    int32_t vout; uint32_t i,n,spents=0; bits256 txid; cJSON *unspents,*item; char str[65]; 
+    if ( (unspents= dpow_listunspent(myinfo,coin,0)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(unspents)) > 0 )
+        {
+            for (i = 0; i < n; i++) 
+            {
+                if ( (item= jitem(unspents,i)) == 0 )
+                    continue;
+                if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
+                    continue;
+                txid = jbits256(item,"txid");
+                vout = jint(item,"vout");
+                if ( bits256_nonz(txid) != 0 && vout >= 0 )
+                {
+                    if ( dpow_gettxout(myinfo, coin, txid, vout) == 0 )
+                    {
+                        printf("[%s] : txid.(%s) vout.(%d) is spent!\n",coin->symbol, bits256_str(str,txid), vout);
+                        spents++;
+                    }
+                }
+            }
+        }
+    }
+    return(spents);
+}
+
 int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,int32_t virtcoin)
 {
     int32_t maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles; char name[64]; int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
@@ -1222,7 +1251,14 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
             }
             coin->active = 1;
             coin->started = 0;
-            return(1);
+            if ( iguana_checkwallet(myinfo, coin) != 0 )
+                return(1);
+            else 
+            {
+                printf("[%s] Exited coin loop due to corrupted wallet, please rectify this issue and restart\n",symbol);
+                myfree(coins,sizeof(*coins) * 2);
+                return(-1);
+            }
         }
         else
         {

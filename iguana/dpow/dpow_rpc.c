@@ -609,7 +609,10 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     char buf[128],*retstr; cJSON *array,*json = 0;
     if ( coin->FULLNODE < 0 )
     {
-        sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
+        if ( coinaddr == 0 )
+            buf = "";
+        else 
+            sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
