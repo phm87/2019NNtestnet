@@ -1257,6 +1257,7 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
             {
                 printf("[%s] has %i spent transactions in its wallet.dat, please fix this issue and restart.\n",symbol,spents);
                 myfree(coins,sizeof(*coins) * 2);
+                exit(0);
                 return(-1);
             }
         }
