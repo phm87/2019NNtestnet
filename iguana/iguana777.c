@@ -1222,7 +1222,7 @@ int32_t iguana_checkwallet(struct supernet_info *myinfo, struct iguana_info *coi
 
 int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,int32_t virtcoin)
 {
-    int32_t maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles; char name[64]; int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
+    int32_t maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles,spents; char name[64]; int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
     if ( symbol == 0 )
         return(-1);
     if ( (coin= iguana_coinfind(symbol)) != 0 )
@@ -1251,11 +1251,11 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
             }
             coin->active = 1;
             coin->started = 0;
-            if ( iguana_checkwallet(myinfo, coin) != 0 )
+            if ( (spents= iguana_checkwallet(myinfo, coin)) == 0 )
                 return(1);
             else 
             {
-                printf("[%s] Exited coin loop due to corrupted wallet, please rectify this issue and restart\n",symbol);
+                printf("[%s] has %i spent transactions in its wallet.dat, please fix this issue and restart.\n",symbol,spents);
                 myfree(coins,sizeof(*coins) * 2);
                 return(-1);
             }
