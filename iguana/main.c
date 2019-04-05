@@ -492,7 +492,7 @@ void mainloop(struct supernet_info *myinfo)
             if ( OS_milliseconds() > lastmilli+100 )
             {
                 //fprintf(stderr,".");
-                counter++;
+                //counter++;
                 coin = 0;
                 depth = 0;
                 //printf("check jsonQ\n");
