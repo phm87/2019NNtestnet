@@ -267,7 +267,7 @@ void dpow_statemachinestart(void *ptr)
     int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1,blockindex=0; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
     char *destlockunspent=0,*srclockunspent=0,*destunlockunspent=0,*srcunlockunspent=0;
     memset(&zero,0,sizeof(zero));
-    static portable_mutex_t dpowT_mutex; 
+    static portable_mutex_t dpowT_mutex;
     portable_mutex_init(&dpowT_mutex);
     MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
@@ -501,6 +501,17 @@ void dpow_statemachinestart(void *ptr)
     }
     else
     {
+        if ( bp->srccoin->notarypay != 0 && dpow_checknotarization(myinfo, bp->srccoin) == 0)
+        {
+            printf("[%s] notary pay fund is empty, need to send coins to: REDVp3ox1pbcWYCzySadfHhk8UU3HM4k5x\n", bp->srccoin->symbol);
+            portable_mutex_lock(&dpowT_mutex);
+            dp->blocks[blockindex] = 0;
+            bp->state = 0xffffffff;
+            free(bp);
+            portable_mutex_unlock(&dpowT_mutex);
+            free(ptr);
+            return;
+        }
         if ( dpow_haveutxo(myinfo,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) > 0 )
         {
             if ( (strcmp("KMD",dest->symbol) == 0 ) && (ep->dest.prev_vout != -1) )
@@ -590,7 +601,7 @@ void dpow_statemachinestart(void *ptr)
                 src_or_dest = 0;
             else src_or_dest = 1;
             extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
-            // This is no longer be needed... It can stop notarizations dead if they have not happened for 1440 blocks. 
+            // This is no longer be needed... It can stop notarizations dead if they have not happened for 1440 blocks.
             //if ( extralen == -1 )
             //    break;
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
@@ -653,13 +664,13 @@ void dpow_statemachinestart(void *ptr)
         int8_t send_dest = 0, send_src = 0; char rettx[32768] = {0};
         if ( firstloop == 0 )
         {
-            sleep((rand() % (120 - 60)) + 60); 
+            sleep((rand() % (120 - 60)) + 60);
             firstloop = 1;
         }
-        // random sleep here so all nodes are checking/rebroadcasting at diffrent times. 
+        // random sleep here so all nodes are checking/rebroadcasting at diffrent times.
         sleep((rand() % (77 - 33)) + 33);
-        
-        // get the confirms for desttxid 
+
+        // get the confirms for desttxid
         if ( destnotarized == 0 )
         {
             if ( (dest_confs= dpow_txconfirms(myinfo, bp->destcoin, bp->desttxid, rettx)) != -1 )
@@ -682,7 +693,7 @@ void dpow_statemachinestart(void *ptr)
                     if ( desttx[0] != 0 )
                         send_dest = 1;
                 }
-            } 
+            }
             else if ( desttx[0] != 0 ) // we have the tranxation hex saved, and the tx is not in the local mempool or a block, so resend it.
             {
                 fprintf(stderr, "[%s] Cant find tx.%s rebroadcasting...\n", dp->dest, bits256_str(str,bp->desttxid));
@@ -692,9 +703,9 @@ void dpow_statemachinestart(void *ptr)
             {
                 char *tmpstr = dpow_sendrawtransaction(myinfo, bp->destcoin, desttx);
                 free(tmpstr);
-            }    
+            }
         }
-        
+
         // get the confirms for srctxid
         memset(rettx,0,sizeof(rettx)); // zero out rettx!
         if ( srcnotarized == 0 )
