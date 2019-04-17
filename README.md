@@ -4,8 +4,8 @@ Make a Pull Request with your IP Address added to `iguana/m_notary_testnet` and 
 
 # How to start the notary
 
-#### Clone this repo
-#### Install dependencies
+#### * Clone this repo
+#### * Install dependencies
 ```shell
 sudo apt install build-essential pkg-config libc6-dev m4 \
         g++-multilib autoconf libtool ncurses-dev unzip git python \
@@ -14,9 +14,9 @@ sudo apt install build-essential pkg-config libc6-dev m4 \
         libqrencode-dev libdb++-dev ntp ntpdate vim software-properties-common \
         curl libevent-dev libcurl4-gnutls-dev libsodium-dev cmake clang
 ```
-#### Install nanomsg from https://github.com/nanomsg/nanomsg
-#### Clone and build Komodo from jl777/komodo dev branch
-#### Create ~/.komodo.conf
+#### * Install nanomsg from https://github.com/nanomsg/nanomsg
+#### * Clone and build Komodo from jl777/komodo dev branch
+#### * Create ~/.komodo.conf
 ```
 rpcuser=<secure username>
 rpcpassword=<secure password>
@@ -25,10 +25,10 @@ server=1
 daemon=1
 rpcworkqueue=256
 ```
-#### Start KMD daemon
-#### Export keys
-#### Start KMD daemon with `-pubkey=<your public key>`
-#### Start BEER, PIZZA and TXSCLCC with `-pubkey=<your public key>`
+#### * Start KMD daemon
+#### * Export keys
+#### * Start KMD daemon with `-pubkey=<your public key>`
+#### * Start BEER, PIZZA and TXSCLCC with `-pubkey=<your public key>`
 ```shell
 komodod -ac_name=BEER -ac_supply=100000000 -addnode=78.47.196.146 -pubkey=<your public key>
 ```
@@ -38,7 +38,7 @@ komodod -ac_name=PIZZA -ac_supply=100000000 -addnode=78.47.196.146 -pubkey=<your
 ```shell
 komodod -ac_name=TXSCLCC -ac_supply=0 -ac_reward=2500000000 -ac_halving=210000 -ac_cc=2 -addressindex=1 -spentindex=1 -pubkey=<your public key> -addnode=54.36.126.42 -addnode=94.130.224.11
 ```
-#### Open ports required for p2p.
+#### * Open ports required for p2p.
 
 | Coin          | Port          |
 | ------------- |-------------: |
@@ -48,8 +48,8 @@ komodod -ac_name=TXSCLCC -ac_supply=0 -ac_reward=2500000000 -ac_halving=210000 -
 | TXSCLCC       | 51797         |
 | Iguana        | 17711         |
 
-#### Fund public key address on all 3 nodes.
-#### Import your private key to all 3 nodes.
+#### * Fund public key address on all 3 nodes.
+#### * Import your private key to all 3 nodes.
 ```shell
 komodo-cli -ac_name=BEER importprivkey <your private key>
 ```
@@ -68,16 +68,16 @@ komodo-cli -ac_name=TXSCLCC setgenerate true 1 #start mining
 ```shell
 komodo-cli -ac_name=TXSCLCC setgenerate false #stop mining
 ```
-#### Create `~/2019NNtestnet/iguana/pubkey.txt`
+#### * Create `~/2019NNtestnet/iguana/pubkey.txt`
 ```
 pubkey=<your public key>
 ```
-#### Create `~/2019NNtestnet/iguana/passphrase.txt`
+#### * Create `~/2019NNtestnet/iguana/passphrase.txt`
 ```
 passphrase=<your private key>
 ```
-#### Wait until the PR is merged.
-#### Start Notorization with Iguana
+#### * Wait until the PR is merged.
+#### * Start Notorization with Iguana
 *This script must be started from within the `2019NNtestnet/iguana` directory.*
 ```shell
 cd ~/2019NNtestnet/iguana
