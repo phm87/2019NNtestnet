@@ -2,8 +2,6 @@
 
 Make a Pull Request with your IP Address added to `iguana/m_notary_testnet` and your public key and name added to `iguana/testnet.json`.
 
-Make a PR with edits to this repo.
-
 # How to start the notary
 
 #### Clone this repo
