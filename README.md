@@ -15,7 +15,7 @@ sudo apt install build-essential pkg-config libc6-dev m4 \
         curl libevent-dev libcurl4-gnutls-dev libsodium-dev cmake clang
 ```
 #### * Install nanomsg from https://github.com/nanomsg/nanomsg
-#### * Clone and build Komodo from jl777/komodo dev branch
+#### * Clone and build Komodo from https://github.com/jl777/komodo --branch dev
 #### * Create ~/.komodo.conf
 ```
 rpcuser=<secure username>
