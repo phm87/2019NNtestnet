@@ -2,7 +2,7 @@
 
 Make a Pull Request with your IP Address added to `iguana/m_notary_testnet` and your public key and name added to `iguana/testnet.json`.
 
-# How to start the notary
+# Install and start the notary
 
 #### * Clone this repo
 #### * Install dependencies
@@ -77,14 +77,9 @@ pubkey=<your public key>
 passphrase=<your private key>
 ```
 #### * Wait until the PR is merged.
-#### * Start Notorization with Iguana
-*This script must be started from within the `2019NNtestnet/iguana` directory.*
+#### * Start/restart notorization with Iguana
+*This script must be run from within the `2019NNtestnet/iguana` directory.*
 ```shell
-cd ~/2019NNtestnet/iguana
-./m_notary_testnet
-```
-# How to restart when new participants are added
-```
 cd ~/2019NNtestnet/iguana
 ./m_notary_testnet
 ```
