@@ -27,6 +27,7 @@ rpcworkqueue=256
 ```
 #### * Start KMD daemon
 #### * Export keys
+#### * Stop KMD daemon
 #### * Start KMD daemon with `-pubkey=<your public key>`
 #### * Start BEER, PIZZA and TXSCLCC with `-pubkey=<your public key>`
 ```shell
