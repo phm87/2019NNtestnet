@@ -52,13 +52,7 @@ komodod -ac_name=TXSCLCC -ac_supply=0 -ac_reward=2500000000 -ac_halving=210000 -
 #### * Fund public key address on all 3 nodes.
 #### * Import your private key to all 3 nodes.
 ```shell
-komodo-cli -ac_name=BEER importprivkey <your private key>
-```
-```shell
-komodo-cli -ac_name=PIZZA importprivkey <your private key>
-```
-```shell
-komodo-cli -ac_name=TXSCLCC importprivkey <your private key>
+komodo-cli -ac_name=<coin name> importprivkey <your private key>
 ```
 *If you need PIZZA or BEER, use the faucets at https://www.atomicexplorer.com/#/faucet/ or ask in #notarynode channel.*
 
