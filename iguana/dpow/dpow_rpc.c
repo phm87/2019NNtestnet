@@ -334,9 +334,7 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 kmdheight = jint(infojson,"blocks");
                 free_json(infojson);
             }
-            // 5 block delay is easily enough most of the time. In rare case KMD is reorged more than this,
-            // the backup notary validation can be used to complete the import.
-            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight-5,bp->CCid)) != 0 )
+            if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
             {
                 /*if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
                 {
