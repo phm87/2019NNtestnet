@@ -26,8 +26,39 @@ daemon=1
 rpcworkqueue=256
 ```
 #### * Start KMD daemon
+```shell
+komodod
+```
 #### * Export keys
+```shell
+# Get your address (to backup)
+komodo-cli getaccountaddress ""
+<your address>
+# Retrieve your public key (to backup)
+komodo-cli validateaddress <your address>
+{
+  "isvalid": true,
+  "address": "<your address>",
+  "scriptPubKey": "<you don't need to use your scriptPubKey, do not use>",
+  "segid": 63,
+  "ismine": true,
+  "iswatchonly": false,
+  "isscript": false,
+  "pubkey": "<your public key>",
+  "iscompressed": true,
+  "account": ""
+}
+# Get private key (to backup and keep secret)
+komodo-cli dumpprivkey <your address>
+<your private key>
+```
+Please do not share your private key, keep it secret.
+#### * Edit files and make the PR
+Edit `iguana/m_notary_testnet` and `iguana/testnet.json` to add an entry for you using <your public key> and your IP address. Edit files into your fork of this github repository then make a Pull Request to this repository.
 #### * Stop KMD daemon
+```shell
+komodo-cli stop
+```
 #### * Start KMD daemon with `-pubkey=<your public key>`
 #### * Start BEER, PIZZA and TXSCLCC with `-pubkey=<your public key>`
 ```shell
@@ -49,11 +80,7 @@ komodod -ac_name=TXSCLCC -ac_supply=0 -ac_reward=2500000000 -ac_halving=210000 -
 | TXSCLCC       | 51797         |
 | Iguana        | 17711         |
 
-#### * Fund public key address on all 3 nodes.
-#### * Import your private key to all 3 nodes.
-```shell
-komodo-cli -ac_name=<coin name> importprivkey <your private key>
-```
+#### * Fund public key address on komodo and each asset chain.
 *If you need PIZZA or BEER, use the faucets at https://www.atomicexplorer.com/#/faucet/ or ask in #notarynode channel.*
 
 For TXSCLCC chain, mine 1 block using 1 CPU thread.
@@ -62,6 +89,10 @@ komodo-cli -ac_name=TXSCLCC setgenerate true 1 #start mining
 ```
 ```shell
 komodo-cli -ac_name=TXSCLCC setgenerate false #stop mining
+```
+#### * Import your private key to all 3 nodes.
+```shell
+komodo-cli -ac_name=<coin name> importprivkey <your private key>
 ```
 #### * Create `~/2019NNtestnet/iguana/pubkey.txt`
 ```
