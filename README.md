@@ -54,7 +54,16 @@ komodo-cli dumpprivkey <your address>
 ```
 Please do not share your private key, keep it secret.
 #### * Edit files and make the PR
-Edit `iguana/m_notary_testnet` and `iguana/testnet.json` to add an entry for you using <your public key> and your IP address. Edit files into your fork of this github repository then make a Pull Request to this repository.
+Edit `iguana/m_notary_testnet` and `iguana/testnet.json` to add an entry for you using <your public key> and your public IP address. Edit files into your fork of this github repository then make a Pull Request to this repository.
+
+What is my public IP ?
+```shell
+curl https://ipinfo.io/ip
+```
+or
+```shell
+dig +short myip.opendns.com @resolver1.opendns.com
+```
 #### * Stop KMD daemon
 ```shell
 komodo-cli stop
@@ -103,9 +112,19 @@ pubkey=<your public key>
 passphrase=<your private key>
 ```
 #### * Wait until the PR is merged.
+Please feel free to join the Komodo discord where you can ask some help into the #notarynode channel https://discord.gg/UdwpxrG
+
 #### * Start/restart notorization with Iguana
 *This script must be run from within the `2019NNtestnet/iguana` directory.*
 ```shell
 cd ~/2019NNtestnet/iguana
 ./m_notary_testnet
 ```
+#### * Ressources
+This repository contains many useful scripts but you should read and understand before executing blindly. You'll find useful scripts at the following repositories but you should read the readme, adapt the config and read the code of the scripts you want to execute.
+https://github.com/KMDLabs/StakedNotary/
+https://github.com/KomodoPlatform/komodotools
+http://www.notarynodewiki.info
+https://github.com/MrMLynch/nnutils
+
+https://blog.komodoplatform.com/delayed-proof-of-work-explained-9a74250dbb86
