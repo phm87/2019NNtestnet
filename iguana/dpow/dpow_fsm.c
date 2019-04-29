@@ -644,7 +644,7 @@ void dpow_statemachinestart(void *ptr)
             printf("abort pending ratify\n");
             break;
         }
-        sleep(29);
+        sleep(30);
     }
     printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     dp->lastrecvmask = bp->recvmask;
