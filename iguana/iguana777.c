@@ -1144,8 +1144,10 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
 	}
     if (jobj(json, "notarypay") != 0)
 	{
-		coin->notarypay = juint(json, "notarypay");
-        // Exempt main chain from this after testing! FIXME...
+        if ( ( strcmp("LABSRCTEST",coin->symbol) == 0 ) || ( strcmp("LABS",coin->symbol) == 0 ) )
+            coin->notarypay = 0;
+        else 
+            coin->notarypay = juint(json, "notarypay");
 		printf("[blackjok3r] %s notarypay = %d\n", symbol, coin->notarypay);
 	}
 	if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
