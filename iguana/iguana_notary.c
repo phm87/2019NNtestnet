@@ -59,12 +59,12 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 }
 
 #if STAKED
-int8_t is_STAKED(const char *chain_name) 
+int8_t is_STAKED(const char *chain_name)
 {
     int8_t ret;
     if ( chain_name[0] == 0 )
         return(0);
-    if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) ) 
+    if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) )
         ret = 1; // These chains are allowed coin emissions.
     else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
         ret = 2; // These chains have no speical rules at all.
@@ -1083,7 +1083,7 @@ TWO_STRINGS(dex,listunspent,symbol,address)
         }
     }
     else if ( coin != 0 && coin->FULLNODE < 0 )
-        return(jprint(dpow_listunspent(myinfo,coin,address),1));
+        return(jprint(dpow_listunspent(myinfo,coin,address,0),1));
     //printf("call _dex_listunspent\n");
     return(_dex_listunspent(myinfo,symbol,address));
 }

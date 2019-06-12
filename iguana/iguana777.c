@@ -1193,12 +1193,12 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
 
 int32_t iguana_checkwallet(struct supernet_info *myinfo, struct iguana_info *coin)
 {
-    int32_t vout; uint32_t i,n,spents=0; bits256 txid; cJSON *unspents,*item; char str[65]; 
-    if ( (unspents= dpow_listunspent(myinfo,coin,0)) != 0 )
+    int32_t vout; uint32_t i,n,spents=0; bits256 txid; cJSON *unspents,*item; char str[65];
+    if ( (unspents= dpow_listunspent(myinfo,coin,0,0)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(unspents)) > 0 )
         {
-            for (i = 0; i < n; i++) 
+            for (i = 0; i < n; i++)
             {
                 if ( (item= jitem(unspents,i)) == 0 )
                     continue;

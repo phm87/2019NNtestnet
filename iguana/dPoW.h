@@ -183,7 +183,7 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
 char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
 char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
-cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr);
+cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t dpow);
 cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip);
 char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
 cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *key,char *value,int32_t flags);

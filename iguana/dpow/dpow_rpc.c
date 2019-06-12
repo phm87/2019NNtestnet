@@ -605,15 +605,17 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
     return(json);
 }
 
-cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
+cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t dpow)
 {
     char buf[128],*retstr; cJSON *array,*json = 0;
     if ( coin->FULLNODE < 0 )
     {
         if ( coinaddr == 0 )
             sprintf(buf,"");
-        else
+        else if ( dpow == 1 )
             sprintf(buf,"1, 7777, [\"%s\"]",coinaddr);
+        else
+            sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
@@ -1010,7 +1012,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
     int32_t vout,haveutxo = 0; uint32_t i,j,n,r; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str,*address; uint8_t script[35];
     memset(txidp,0,sizeof(*txidp));
     *voutp = -1;
-    if ( (unspents= dpow_listunspent(myinfo,coin,coinaddr)) != 0 )
+    if ( (unspents= dpow_listunspent(myinfo,coin,coinaddr,1)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(unspents)) > 0 )
         {
@@ -1021,8 +1023,8 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                     i = 0;
                 else
                 {
-                      OS_randombytes((uint8_t *)&r,sizeof(r));
-                      i = r % n;
+                    OS_randombytes((uint8_t *)&r,sizeof(r));
+                    i = r % n;
                 }
                 j++;
                 printf("[%s] : chosen = %d  out of %d loop.(%d)\n",coin->symbol,i,n,j);
