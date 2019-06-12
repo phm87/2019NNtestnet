@@ -1017,13 +1017,18 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
             j=0;
             while (haveutxo < 1)
             {
-                j++;
-                if (j == n) {
-                  haveutxo=0;
-                  break;
-                }
-                OS_randombytes((uint8_t *)&r,sizeof(r));
-                i = r % n;
+                if ( n == 1 )
+                    i = 0;
+                else
+                {
+                      OS_randombytes((uint8_t *)&r,sizeof(r));
+                      i = r % n;
+                      j++;
+                      if (j == n) {
+                        haveutxo=0;
+                        break;
+                      }
+                }               
                 printf("[%s] : chosen = %d  out of %d loop.(%d)\n",coin->symbol,i,n,j);
                 if ( (item= jitem(unspents,i)) == 0 )
                     continue;
