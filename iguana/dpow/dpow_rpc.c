@@ -1049,10 +1049,10 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                         }
                     }
                 }
-            }
-            if (j == n) {
-              haveutxo=0;
-              break;
+                if (j == n) {
+                  haveutxo=0;
+                  break;
+                }
             }
             if ( haveutxo == 0 )
               printf("no (%s -> %s) utxo: need to fund address.(%s) or wait for splitfund to confirm\n",srccoin,coin->symbol,coinaddr);
