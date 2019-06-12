@@ -64,7 +64,7 @@ cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
     {
         buf[0] = 0;
         retstr = bitcoind_getinfo(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->getinfostr);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -297,7 +297,7 @@ cJSON *dpow_MoMoMdata(struct iguana_info *coin,char *symbol,int32_t kmdheight,ui
             //printf("%s kmdheight.%d CCid.%u MoMoM.%s -> %s\n",symbol,kmdheight,CCid,buf,retstr);
             free(retstr);
         }
-        usleep(1000);
+        usleep(10000);
     }
     return(retjson);
 }
@@ -335,8 +335,8 @@ int32_t dpow_paxpending(struct supernet_info *myinfo,uint8_t *hex,int32_t hexsiz
                 kmdheight = jint(infojson,"blocks");
                 free_json(infojson);
             }
-            // 5 block delay is easily enough most of the time. In rare case KMD is reorged more than this, 
-            // the backup notary validation can be used to complete the import.            
+            // 5 block delay is easily enough most of the time. In rare case KMD is reorged more than this,
+            // the backup notary validation can be used to complete the import.
             if ( (retjson= dpow_MoMoMdata(kmdcoin,bp->srccoin->symbol,kmdheight,bp->CCid)) != 0 )
             {
                 /*if ( ppMoMheight != 0 && jstr(retjson,"error") != 0 )
@@ -397,7 +397,7 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
         sprintf(buf,"%d",height);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblockhash",buf);
         //printf("%s ht.%d -> getblockhash.(%s)\n",coin->symbol,height,retstr);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -426,7 +426,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblock",buf);
         if ( 0 && strcmp(coin->symbol,"USD") == 0 )
             printf("%s getblock.(%s)\n",coin->symbol,retstr);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -465,7 +465,7 @@ char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin
             }
             free_json(retjson);
         }
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -485,7 +485,7 @@ cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     if ( coin->FULLNODE < 0 )
     {
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"gettxout",buf);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -548,7 +548,7 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"decoderawtransaction",paramstr);
         //printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -587,7 +587,7 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
         {
         }
-        usleep(1000);
+        usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -612,7 +612,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     {
         if ( coinaddr == 0 )
             sprintf(buf,"");
-        else 
+        else
             sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
         {
@@ -710,7 +710,7 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
 	/*if (coin->sapling != 0)
 		printf("[Decker] %s dpow_signrawtransaction.(%s) params.(%s)\n", coin->symbol, retstr, paramstr);*/
         free(paramstr);
-        usleep(1000);
+        usleep(10000);
         return(retstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
@@ -1496,7 +1496,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
                         printf("error height %d\n",height);
                         break;
                     }
-                    usleep(10000);
+                    usleep(100000);
                 }
                 if ( height >= currentheight )
                     *isrealtimep = (uint32_t)time(NULL);
@@ -1509,7 +1509,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     else
     {
         printf("error from %s height.%d currentheight.%d\n",coin->symbol,height,currentheight);
-        usleep(100000);
+        usleep(1000000);
     }
     //printf("[%s -> %s] %s ht.%d current.%d\n",dp->symbol,dp->dest,coin->symbol,height,currentheight);
     return(height);
