@@ -1050,7 +1050,6 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                     }
                 }
                 if (j == n) {
-                  haveutxo=0;
                   break;
                 }
             }
