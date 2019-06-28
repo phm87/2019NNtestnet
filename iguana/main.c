@@ -2251,15 +2251,15 @@ void iguana_main(void *arg)
         }
         else if ( strncmp((char *)arg,"notary",strlen("notary")) == 0 ) // must be second to last
         {
-            if ( strcmp((char *)arg,"notary_nosplit") == 0 )
-                myinfo->nosplit = 1;
             myinfo->rpcport = IGUANA_NOTARYPORT;
+            myinfo->nosplit = 1;
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
         }
         else
         {
-            myinfo->rpcport = IGUANA_NOTARYPORT;
+            // this means that an elected file was specified for 3rd party network, so use diffrent RPC port. 
+            myinfo->rpcport = IGUANA_NOTARYPORT2;
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
             elected = (char *)arg;
