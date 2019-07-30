@@ -42,7 +42,7 @@
 
 
 #define DPOW_FIFOSIZE 64
-#define DPOW_MAXTX 8192
+#define DPOW_MAXTX 1
 #define DPOW_THIRDPARTY_CONFIRMS 0
 #define DPOW_KOMODOCONFIRMS 10
 #define DPOW_BTCCONFIRMS 1
@@ -116,7 +116,7 @@ struct dpow_block
     struct dpow_recvdata recv[64];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t MoMdepth,state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc,lastnanosend;
-    int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
+    int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS],destht_start;
     int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk,matches,bestmatches;
     cJSON *ratified;
     uint16_t CCid;
@@ -183,7 +183,7 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
 char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
 char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
-cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr);
+cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t dpow);
 cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip);
 char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
 cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *key,char *value,int32_t flags);

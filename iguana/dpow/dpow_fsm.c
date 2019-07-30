@@ -267,7 +267,7 @@ void dpow_statemachinestart(void *ptr)
     int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1,blockindex=0; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
     char *destlockunspent=0,*srclockunspent=0,*destunlockunspent=0,*srcunlockunspent=0;
     memset(&zero,0,sizeof(zero));
-    static portable_mutex_t dpowT_mutex;
+    portable_mutex_t dpowT_mutex;
     portable_mutex_init(&dpowT_mutex);
     MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
@@ -305,7 +305,7 @@ void dpow_statemachinestart(void *ptr)
         bp = calloc(1,sizeof(*bp));
         dp->blocks[blockindex] = bp;
         portable_mutex_unlock(&dpowT_mutex);
-        printf("blockindex.%i allocate bp for %s ht.%d -> %s\n",blockindex,src->symbol,checkpoint.blockhash.height,dest->symbol);
+        //printf("blockindex.%i allocate bp for %s ht.%d -> %s\n",blockindex,src->symbol,checkpoint.blockhash.height,dest->symbol);
         bp->MoM = MoM;
         bp->MoMdepth = MoMdepth;
         bp->CCid = dp->fullCCid & 0xffff;
@@ -314,6 +314,7 @@ void dpow_statemachinestart(void *ptr)
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->myind = -1;
+        bp->destht_start = bp->destcoin->longestchain;
         for (i=0; i<sizeof(bp->notaries)/sizeof(*bp->notaries); i++)
             bp->notaries[i].bestk = -1;
         bp->opret_symbol = dp->symbol;

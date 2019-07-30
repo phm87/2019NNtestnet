@@ -59,12 +59,12 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 }
 
 #if STAKED
-int8_t is_STAKED(const char *chain_name) 
+int8_t is_STAKED(const char *chain_name)
 {
     int8_t ret;
     if ( chain_name[0] == 0 )
         return(0);
-    if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) ) 
+    if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) )
         ret = 1; // These chains are allowed coin emissions.
     else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
         ret = 2; // These chains have no speical rules at all.
@@ -544,7 +544,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][65] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL", "PIRATE", "MGNX", "PGT", "KMDICE", "DION", "ZEX", "KSB", "OUR", "ILN"
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL", "PIRATE", "MGNX", "PGT", "KMDICE", "DION", "KSB", "OUR", "ILN", "RICK", "MORTY", "VOTE2019", "HUSH3", "KOIN", "ZEXO", "K64"
 };
 
 // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
@@ -909,6 +909,8 @@ STRING_ARG(dpow,active,maskhex)
         free_json(infojson);
     } else return(clonestr("{\"error\":\"cant get current height\"}"));
     n = komodo_notaries("KMD",pubkeys,current);
+    if ( myinfo->DPOWS[0]->currentbp == 0 )
+        return(clonestr("{\"error\":\"there is no dpow round yet started to check.\"}"));
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[0],myinfo->DPOWS[0]->currentbp),1));
@@ -1081,7 +1083,7 @@ TWO_STRINGS(dex,listunspent,symbol,address)
         }
     }
     else if ( coin != 0 && coin->FULLNODE < 0 )
-        return(jprint(dpow_listunspent(myinfo,coin,address),1));
+        return(jprint(dpow_listunspent(myinfo,coin,address,0),1));
     //printf("call _dex_listunspent\n");
     return(_dex_listunspent(myinfo,symbol,address));
 }
