@@ -492,7 +492,7 @@ void mainloop(struct supernet_info *myinfo)
             if ( OS_milliseconds() > lastmilli+100 )
             {
                 //fprintf(stderr,".");
-                counter++;
+                //counter++;
                 coin = 0;
                 depth = 0;
                 //printf("check jsonQ\n");
@@ -780,7 +780,7 @@ void jumblr_loop(void *ptr)
 
 void dpow_loop(void *arg)
 {
-    struct supernet_info *myinfo = arg; double startmilli,endmilli;
+    struct supernet_info *myinfo = arg; double startmilli,endmilli; 
     int32_t counter = 0;
     printf("start dpow loop\n");
     while ( 1 )
@@ -798,13 +798,15 @@ void dpow_loop(void *arg)
             else if ( myinfo->numdpows > 1 )
             {
                 iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
-                endmilli = startmilli + 30;
+                endmilli = startmilli + 20;
+                //if ( rand() % 100 < 50 )
+                    iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
             }
         }
-        if ( counter > 1000000 )
-            counter = 0;
         while ( OS_milliseconds() < endmilli )
-            usleep(10000);
+            usleep(1000);
+        if ( counter > myinfo->numdpows+1 )
+            counter = 0;
     }
 }
 
@@ -2249,15 +2251,15 @@ void iguana_main(void *arg)
         }
         else if ( strncmp((char *)arg,"notary",strlen("notary")) == 0 ) // must be second to last
         {
-            if ( strcmp((char *)arg,"notary_nosplit") == 0 )
-                myinfo->nosplit = 1;
             myinfo->rpcport = IGUANA_NOTARYPORT;
+            myinfo->nosplit = 1;
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
         }
         else
         {
-            myinfo->rpcport = IGUANA_NOTARYPORT;
+            // this means that an elected file was specified for 3rd party network, so use diffrent RPC port. 
+            myinfo->rpcport = IGUANA_NOTARYPORT2;
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
             elected = (char *)arg;

@@ -511,7 +511,7 @@ cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,c
                 unspents = cJSON_Parse(retstr);
                 free(retstr);
             }
-        } else unspents = dpow_listunspent(myinfo,coin,coinaddr);
+        } else unspents = dpow_listunspent(myinfo,coin,coinaddr,0);
     }
     return(unspents);
 }
@@ -535,4 +535,3 @@ char *basilisk_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     else retstr = dpow_sendrawtransaction(myinfo,coin,signedtx);
     return(retstr);
 }
-

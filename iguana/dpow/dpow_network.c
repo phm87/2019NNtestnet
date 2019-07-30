@@ -29,7 +29,7 @@ struct signed_nnpacket
 
 void dex_init(struct supernet_info *myinfo)
 {
-    int32_t i,j,mask = 0; 
+    int32_t i,j,mask = 0;
     OS_randombytes((void *)&i,sizeof(i));
     srand(i);
     for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
@@ -636,7 +636,7 @@ return(clonestr("{\"error\":\"basilisk disabled\"}"));
             }
             else if ( dexreq.func == 'U' )
             {
-                if ( (retjson= dpow_listunspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                if ( (retjson= dpow_listunspent(myinfo,coin,(char *)&dexp->packet[datalen],0)) != 0 )
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
@@ -1234,7 +1234,7 @@ int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
 
 int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
 {
-    uint32_t crc32; //int32_t firstz=-1; 
+    uint32_t crc32; //int32_t firstz=-1;
     if ( dexp->version0 == (DEX_VERSION & 0xff) && dexp->version1 == ((DEX_VERSION >> 8) & 0xff) )
     {
         if ( dexp->datalen == (size - sizeof(*dexp)) )
@@ -1546,7 +1546,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
         nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
         maxsize = 1024 * 1024;
         printf("%s RCVBUF.%d\n",bindpoint,nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
-        
+
         myinfo->nanoinit = (uint32_t)time(NULL);
     } //else printf("error creating nanosocket\n");
     if ( myinfo->dpowsock != dpowsock )
@@ -1999,6 +1999,20 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
         }
+        
+        // check that block has advanced by 1 on KMD before allowing bestmask to be calculated 
+        if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
+        {
+            if ( bp->destht_start == bp->destcoin->longestchain )
+                return;
+        }
+        else 
+        {
+            if ( bp->height == bp->srccoin->longestchain )
+                return;
+        }  
+        //fprintf(stderr, "[%s] checkpoint ht.%i vs longestchain.%i\n",bp->srccoin->symbol, bp->destht_start, bp->destcoin->longestchain);
+        
         dpow_bestconsensus(dp,bp);
         if ( bp->bestk >= 0 )
             bp->notaries[bp->myind].bestk = bp->bestk;
@@ -2311,7 +2325,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                             if ( i == myinfo->numdpows )
                                 printf("received nnpacket for (%s)\n",np->symbol);
                             else
-                            {                             
+                            {
                                 dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,sizeof(np->ipbits)/sizeof(*np->ipbits),np->senderind,np->myipbits);
                                 if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                                 {
