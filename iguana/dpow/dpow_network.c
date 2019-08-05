@@ -1584,10 +1584,11 @@ int32_t dpow_crossconnected(uint64_t *badmaskp,struct dpow_block *bp,uint64_t be
     //printf("-> num.%d for bestmask.%llx\n",num,(long long)bestmask);
     return(num);
 }
+int32_t dpow_minnodes(struct dpow_block *bp);
 
 void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 {
-    int8_t bestks[64]; uint32_t sortbuf[64],wts[64],owts[64],counts[64]; int32_t i,j,median,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],badmask,matchesmask,recvmask,topmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
+    int8_t bestks[64]; uint32_t sortbuf[64],wts[64],owts[64],counts[64]; int32_t i,j,z,k,n,jk,median,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],badmask,matchesmask,recvmask,topmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
     memset(wts,0,sizeof(wts));
     memset(owts,0,sizeof(owts));
     for (i=0; i<bp->numnotaries; i++)
@@ -1613,10 +1614,26 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
     memset(masks,0,sizeof(masks));
     memset(bestks,0xff,sizeof(bestks));
     memset(counts,0,sizeof(counts));
-    for (numdiff=i=0; i<bp->numnotaries; i++)
+    for (jk=numdiff=i=0; i<bp->numnotaries; i++)
     {
         if ( bits256_nonz(bp->notaries[i].src.prev_hash) != 0 && bits256_nonz(bp->notaries[i].dest.prev_hash) != 0 )
+        {
             recvmask |= (1LL << i);
+            bp->recvmask |= recvmask;
+        }
+        else 
+        {
+            fprintf(stderr, "node.%i no utxos duration.%u\n",i,(uint32_t)time(NULL)-bp->starttime);
+            continue;        
+        }
+        k = DPOW_MODIND(bp,i);
+        for (z=n=0; z<bp->numnotaries; z++)
+            if ( (bp->notaries[z].recvmask & (1LL << k)) != 0 )
+                n++;
+        if ( n < dpow_minnodes(bp) )
+            continue;
+        jk++;
+        fprintf(stderr, "[%s] recvmask.%i vs min.%i of max.%i duration.%u\n",Notaries_elected[i][0], n, dpow_minnodes(bp), bp->numnotaries, (uint32_t)time(NULL)-bp->starttime); 
         if ( bp->notaries[i].bestk < 0 || bp->notaries[i].bestmask == 0 )
             continue;
         //if ( bp->require0 != 0 && (bp->notaries[i].bestmask & 1) == 0 )
@@ -1636,6 +1653,9 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
             numdiff++;
         }
     }
+    // checks we have minimum nodes that can see minimum nodes each. 
+    if ( jk < dpow_minnodes(bp) )
+        return;
     besti = -1, matches = 0;
     for (i=0; i<numdiff; i++)
     {
@@ -1676,7 +1696,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
             printf(" <- problem nodes.%s\n",dp->symbol);
         }
     }
-    bp->recvmask |= recvmask;
+    
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
     {
         bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
@@ -1984,6 +2004,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         {
             bp->notaries[bp->myind].src.prev_hash = bp->mysrcutxo;
             bp->notaries[bp->myind].dest.prev_hash = bp->mydestutxo;
+            
         }
         if ( bestmask != 0 )
             bp->notaries[senderind].bestmask = bestmask;
@@ -1994,24 +2015,13 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             //fprintf(stderr,"{%d %x} ",senderind,paxwdcrc);
         }
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
-        if ( bp->bestmask == 0 )
+        //fprintf(stderr, "recvmask.%lu adding senderind.%i myind.%i\n",bp->recvmask, senderind, bp->myind );
+        bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
+        
+        if ( bp->bestmask == 0 ) // || time(NULL) >= bp->starttime+70 )
         {
-            bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
         }
-        
-        // check that block has advanced by 1 on KMD before allowing bestmask to be calculated 
-        if ( strcmp(bp->destcoin->symbol,"KMD") == 0 )
-        {
-            if ( bp->destht_start == bp->destcoin->longestchain )
-                return;
-        }
-        else 
-        {
-            if ( bp->height == bp->srccoin->longestchain )
-                return;
-        }  
-        //fprintf(stderr, "[%s] checkpoint ht.%i vs longestchain.%i\n",bp->srccoin->symbol, bp->destht_start, bp->destcoin->longestchain);
         
         dpow_bestconsensus(dp,bp);
         if ( bp->bestk >= 0 )
@@ -2040,7 +2050,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     else bp->destsigsmasks[bestk] &= ~(1LL << senderind);
                 }
             }
-        }
+        }        
         if ( bp->bestk >= 0 )
         {
             flag = -1;
@@ -2311,7 +2321,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     if ( np->datalen == (size - sizeof(*np)) )
                     {
                         crc32 = calc_crc32(0,np->packet,np->datalen);
-                        dp = 0;
+                        dp = 0;                    
                         for (i=0; i<myinfo->numdpows; i++)
                         {
                             if ( strcmp(np->symbol,myinfo->DPOWS[i]->symbol) == 0 )

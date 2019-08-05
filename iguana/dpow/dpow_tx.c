@@ -131,9 +131,32 @@ uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     return(bestmask);
 }
 
+int32_t dpow_minnodes(struct dpow_block *bp)
+{
+    /* these numbers may need adjusting after testing with a full 64 nodes. 
+       maybe a way to track how many nodes are being seen historically and adjust this accordingly, without long time delays. 
+       In: dpow_sigcheck, if the tx fails to send, create the scriptsig and gettxout to verify the utxos being submitted by a node 
+           we can then ban nodes submitting bad sigs for some amount of rounds. 
+           min nodes = min_nodes - sum(nodes banned);
+    */
+    
+    uint32_t nowtime = (uint32_t)time(NULL);
+    if ( nowtime < bp->starttime+32 ) 
+        // dpow round 1 iteration, 3/4 of nodes required in recv mask for 75% of all nodes. (48/64)
+        return bp->numnotaries-((bp->numnotaries+(bp->numnotaries % 2)) / 4);
+    else if ( nowtime < bp->starttime+62 )
+         // dpow round 2 iteration, 2/3% of nodes required in recv mask (42/64)
+        return bp->numnotaries-((bp->numnotaries+(bp->numnotaries % 2)) / 3);
+    else if ( nowtime < bp->starttime+92 ) 
+         //dpow round 3 iteration, 1/2% of nodes required in recv mask (32/64)
+        return bp->numnotaries/2;
+    else 
+        return bp->minsigs; // fall back to minsigs if consensus cannot be reached. (13/64)
+}
+
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t j,m,k; uint64_t bestmask,mask = 0;//bp->require0;
+    int32_t j,m,k,z,n; uint64_t bestmask,mask = 0;//bp->require0;
     bestmask = 0;
     *lastkp = -1;
     m = 0;//bp->require0;
@@ -144,15 +167,22 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
         //    continue;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 && bp->paxwdcrc == bp->notaries[k].paxwdcrc )
         {
-            mask |= (1LL << k);
-            if ( ++m == bp->minsigs )
-            {
-                *lastkp = k;
-                bestmask = mask;
+            for (z=n=0; z<bp->numnotaries; z++)
+                if ( (bp->notaries[z].recvmask & (1LL << k)) != 0 )
+                    n++;
+            fprintf(stderr, "[%i] match_recvmask.%i vs %i \n",k, n, dpow_minnodes(bp));
+            if ( n >= dpow_minnodes(bp) )
+            { 
+                mask |= (1LL << k);
+                if ( ++m == bp->minsigs )
+                {
+                    *lastkp = k;
+                    bestmask = mask;
+                }
             }
         }
     }
-    bp->recvmask |= mask;
+    //bp->recvmask |= mask;
     if ( *lastkp >= 0 )
     {
         for (mask=j=0; j<bp->numnotaries; j++)
@@ -679,6 +709,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 }
                 else
                 {
+                    // TODO: add scriptsig verification like in nSPV for notarizations, and also gettxout to verify which node sent spent/invalid utxos. 
                     bp->state = 0xffffffff;
                     printf("dpow_sigscheck: [src.%s ht.%i] mismatched txid.%s vs %s\n",bp->srccoin->symbol,bp->height,bits256_str(str,txid),retstr);
                     dpow_heightfind2(myinfo,dp,bp->height);
