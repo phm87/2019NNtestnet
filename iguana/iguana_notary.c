@@ -23,7 +23,7 @@
 //#include "notaries.h"
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen);
-uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
+uint64_t dpow_maskmin(uint64_t refmask,struct dpow_info *dp,struct dpow_block *bp,int8_t *lastkp);
 int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin);
 
 #include "dpow/dpow_network.c"
@@ -83,6 +83,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
+        // This needs to be changed somehow.. Nodes who join do not get sent the prevKMD height so they all have diffrent numbers based on when they started dpow. 
         int supressfreq = DPOW_CHECKPOINTFREQ;
 #if STAKED
         if ( is_STAKED(dp->symbol) != 0 )
@@ -94,7 +95,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
-            //fprintf(stderr,"suppress %s -> KMD freq KMD blocks.%d\n",dp->symbol,checkpointfreq);
+            fprintf(stderr,"suppress %s -> KMD freq.%i supress_freq.%i KMD prev_height.%i\n",dp->symbol,dp->freq,supressfreq,dp->prevDESTHEIGHT);
         }
     }
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
@@ -144,7 +145,6 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( suppress == 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % dp->freq) == 0 )
     {
         //dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
-        dp->prevDESTHEIGHT = dp->DESTHEIGHT;
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
@@ -268,8 +268,8 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
             {
                 while ( dp->lastheight <= height )
                 {
-                    blockhash = dpow_getblockhash(myinfo,src,dp->lastheight);
-                    dpow_srcupdate(myinfo,dp,dp->lastheight++,blockhash,(uint32_t)time(NULL),blocktime);
+                    blockhash = dpow_getblockhash(myinfo,src,dp->lastheight++);
+                    dpow_srcupdate(myinfo,dp,dp->lastheight,blockhash,(uint32_t)time(NULL),blocktime);
                 }
             }
             /*else if ( time(NULL) > dp->lastsrcupdate+60 || height != dp->lastheight )
@@ -281,6 +281,59 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
             }*/
         } //else printf("error getchaintip for %s\n",dp->symbol);
     } else printf("iguana_dPoWupdate missing src.(%s) %p or dest.(%s) %p\n",dp->symbol,src,dp->dest,dest);
+}
+
+int32_t iguana_BN_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
+{
+    /* 
+    Used with the following. Just change KMD to the coin name being dpowd and put this in the conf file.
+    blocknotify=curl -s --url "http://127.0.0.1:7776" --data "{\"agent\":\"dpow\",\"method\":\"updatechaintip\",\"blockhash\":\"%s\",\"symbol\":\"KMD\"}"
+    
+    */
+    int32_t height,flag=0; uint32_t blocktime; bits256 blockhash,merkleroot; struct iguana_info *src,*dest;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
+    if ( src != 0 && dest != 0 )
+    {
+        dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
+        if ( (height= dpow_getchaintip(myinfo,&merkleroot,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
+        {
+            char str[65];
+            //printf("[%s] %s height.%d vs last.%d\n",dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
+            if ( height <= dp->destchaintip.blockhash.height )
+            {
+                printf("iguana_BN_dPoWupdate dest.%s reorg detected %d vs %d\n",dp->dest,height,dp->destchaintip.blockhash.height);
+                if ( height == dp->destchaintip.blockhash.height && bits256_cmp(blockhash,dp->destchaintip.blockhash.hash) != 0 )
+                    printf("UNEXPECTED ILLEGAL BLOCK in dest chaintip\n");
+                flag++;
+            } else dpow_destupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
+        } //else printf("error getchaintip for %s\n",dp->dest);
+        dp->numsrctx = sizeof(dp->srctx)/sizeof(*dp->srctx);
+        if ( (height= dpow_getchaintip(myinfo,&merkleroot,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height > 0 )
+        {
+            if ( dp->lastheight == 0 )
+                dp->lastheight = height-1;
+            dp->SRCHEIGHT = height;
+            if ( height < dp->last.blockhash.height )
+            {
+                printf("iguana_BN_dPoWupdate src.%s reorg detected %d vs %d approved.%d notarized.%d\n",dp->symbol,height,dp->last.blockhash.height,dp->approved[0].height,dp->notarized[0].height);
+                if ( height <= dp->approved[0].height )
+                {
+                    if ( bits256_cmp(blockhash,dp->last.blockhash.hash) != 0 )
+                        printf("UNEXPECTED ILLEGAL BLOCK in src chaintip\n");
+                }
+            }
+            else
+            {
+                char str[65]; 
+                printf("[%s] %s height.%d vs last.%d\n",dp->symbol,bits256_str(str,blockhash),height,dp->lastheight);
+                dpow_srcupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
+                dp->lastheight = height;
+                flag++;
+            }
+        } //else printf("error getchaintip for %s\n",dp->symbol);
+    } else printf("iguana_BN_dPoWupdate missing src.(%s) %p or dest.(%s) %p\n",dp->symbol,src,dp->dest,dest);
+    return(flag);
 }
 
 void dpow_addresses()
@@ -370,10 +423,10 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     else
     {
         dp->minsigs = Notaries_minsigs; //DPOW_MIN_ASSETCHAIN_SIGS;
-        if ( freq == 0 && (strcmp("CHIPS",dp->symbol) == 0 || strncmp("TEST",dp->symbol,4) == 0) )
+        if ( freq == 0 && (strcmp("CHIPS",dp->symbol) == 0) )
             dp->freq = DPOW_MAXFREQ;
-        else if ( freq > 2 )
-            dp->freq = freq;
+        //else if ( freq > 2 )
+        //    dp->freq = freq;
         else dp->freq = 2;
     }
     src = iguana_coinfind(dp->symbol);
@@ -433,7 +486,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     }
     if ( dp->blocks == 0 )
     {
-        dp->maxblocks = 100;
+        dp->maxblocks = DPOW_MAX_BLOCKS;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
     //portable_mutex_init(&dp->paxmutex);
@@ -444,6 +497,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
     printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d freq.%d minsigs.%d CCid.%u\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,dp->freq,dp->minsigs,dp->fullCCid);
+    iguana_BN_dPoWupdate(myinfo,dp);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
@@ -528,6 +582,29 @@ STRING_ARG(dpow,bindaddr,ipaddr)
             return(clonestr("{\"result\":\"success\"}"));
         } else return(clonestr("{\"error\":\"invalid bind ipaddr\"}"));
     } else return(clonestr("{\"error\":\"no bind ipaddr\"}"));
+}
+
+HASH_AND_STRING(dpow,updatechaintip,blockhash,symbol)
+{
+    char str[65],buf[1024]; struct dpow_info *dp; int32_t i;
+    
+    for (i=0; i<myinfo->numdpows; i++)
+    {
+        if ( strcmp(symbol,myinfo->DPOWS[i]->symbol) == 0 )
+        {
+            dp = myinfo->DPOWS[i];
+            break;
+        }
+    }
+    if ( dp != 0 )
+    {
+        if ( iguana_BN_dPoWupdate(myinfo,dp) != 0 )
+            sprintf(buf,GREEN"[%s] %s"RESET, symbol, bits256_str(str,blockhash));
+        else 
+            sprintf(buf,RED"[%s] update failed for block %s"RESET,symbol, bits256_str(str,blockhash));
+    }
+    else sprintf(buf,RED"[%s] cannot update non-active or non dpowd coin"RESET, symbol);
+    return(clonestr(buf));
 }
 
 STRING_ARG(iguana,addnotary,ipaddr)

@@ -780,33 +780,37 @@ void jumblr_loop(void *ptr)
 
 void dpow_loop(void *arg)
 {
-    struct supernet_info *myinfo = arg; double startmilli,endmilli; 
-    int32_t counter = 0;
+    struct supernet_info *myinfo = arg; //double startmilli,endmilli; 
+    //int32_t counter = 0;
     printf("start dpow loop\n");
     while ( 1 )
     {
-        counter++;
-        startmilli = OS_milliseconds();
-        endmilli = startmilli + 1000;
+        //counter++;
+        //startmilli = OS_milliseconds();
+        //endmilli = startmilli + 1000;
         if ( myinfo->IAMNOTARY != 0 )
         {
-            if ( myinfo->numdpows == 1 )
+            if ( myinfo->numdpows > 0 )
             {
-                iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
-                endmilli = startmilli + 100;
+                dpow_nanomsg_update(myinfo);
+                //iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
+                //endmilli = startmilli + 100;
             }
-            else if ( myinfo->numdpows > 1 )
-            {
-                iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
-                endmilli = startmilli + 20;
+            //else if ( myinfo->numdpows > 1 )
+            //{
+            //   iguana_dPoWupdate(myinfo,myinfo->DPOWS[counter % myinfo->numdpows]);
+            //    endmilli = startmilli + 20;
                 //if ( rand() % 100 < 50 )
-                    iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
-            }
+            //        iguana_dPoWupdate(myinfo,myinfo->DPOWS[0]);
+            //}
         }
-        while ( OS_milliseconds() < endmilli )
-            usleep(1000);
-        if ( counter > myinfo->numdpows+1 )
-            counter = 0;
+        //while ( OS_milliseconds() < endmilli )
+        //    usleep(1000);
+        //if ( counter > myinfo->numdpows+1 )
+        //    counter = 0;
+        
+        // check for received packets 4 times per second. we will update chaintip with a blocknotify call using iguana_BN_dPoWupdate()
+        usleep(250000);
     }
 }
 

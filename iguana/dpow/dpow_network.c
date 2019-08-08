@@ -667,7 +667,7 @@ return(clonestr("{\"error\":\"basilisk disabled\"}"));
             }
             else if ( dexreq.func == 'S' )
             {
-                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen]);
+                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen],0);
             }
             else if ( dexreq.func == '*' )
             {
@@ -1584,7 +1584,8 @@ int32_t dpow_crossconnected(uint64_t *badmaskp,struct dpow_block *bp,uint64_t be
     //printf("-> num.%d for bestmask.%llx\n",num,(long long)bestmask);
     return(num);
 }
-int32_t dpow_minnodes(struct dpow_block *bp);
+
+//int32_t dpow_minnodes(struct dpow_block *bp);
 
 void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 {
@@ -1623,17 +1624,17 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         }
         else 
         {
-            fprintf(stderr, "node.%i no utxos duration.%u\n",i,(uint32_t)time(NULL)-bp->starttime);
+            //fprintf(stderr, "node.%i no utxos duration.%u\n",i,(uint32_t)time(NULL)-bp->starttime);
             continue;        
         }
-        k = DPOW_MODIND(bp,i);
+        k = DPOW_MODIND(bp,i,dp->freq);
         for (z=n=0; z<bp->numnotaries; z++)
             if ( (bp->notaries[z].recvmask & (1LL << k)) != 0 )
                 n++;
-        if ( n < dpow_minnodes(bp) )
+        if ( n < bp->minnodes )
             continue;
         jk++;
-        fprintf(stderr, "[%s] recvmask.%i vs min.%i of max.%i duration.%u\n",Notaries_elected[i][0], n, dpow_minnodes(bp), bp->numnotaries, (uint32_t)time(NULL)-bp->starttime); 
+        fprintf(stderr, "[%i] recvmask.%i vs min.%i of max.%i duration.%u bestmask.%llx\n",i, n, bp->minnodes, bp->numnotaries, (uint32_t)time(NULL)-bp->starttime,(long long)bp->bestmask); 
         if ( bp->notaries[i].bestk < 0 || bp->notaries[i].bestmask == 0 )
             continue;
         //if ( bp->require0 != 0 && (bp->notaries[i].bestmask & 1) == 0 )
@@ -1654,7 +1655,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         }
     }
     // checks we have minimum nodes that can see minimum nodes each. 
-    if ( jk < dpow_minnodes(bp) )
+    if ( jk < bp->minnodes )
         return;
     besti = -1, matches = 0;
     for (i=0; i<numdiff; i++)
@@ -1697,7 +1698,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         }
     }
     
-    if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
+    /*if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
     {
         bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
         if ( 0 && (time(NULL) / 180) != bp->lastepoch ) // diverges too fast
@@ -1706,7 +1707,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
             printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
             sleep(1 + (rand() % 3));
         }
-    }
+    } */
 }
 
 void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
@@ -1981,7 +1982,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
 
 void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][DPOW_MAXSIGLEN],uint32_t paxwdcrc)
 {
-    bits256 srchash; uint32_t now; int32_t i,flag,bestmatches = 0,matches = 0,paxmatches = 0,paxbestmatches = 0;
+    bits256 srchash; uint32_t now; int32_t i,flag,bestmatches = 0,matches = 0,paxmatches = 0,paxbestmatches = 0,utxos=0;
     if ( bp->myind < 0 )
         return;
     if ( bp->isratify == 0 && bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
@@ -1993,19 +1994,23 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 bp->notaries[senderind].src.prev_hash = srcutxo;
                 bp->notaries[senderind].src.prev_vout = srcvout;
                 //char str[65]; printf("%s senderind.%d <- %s/v%d\n",dp->symbol,senderind,bits256_str(str,srcutxo),srcvout);
+                utxos++;
             }
             if ( bits256_nonz(destutxo) != 0 )
             {
                 bp->notaries[senderind].dest.prev_hash = destutxo;
                 bp->notaries[senderind].dest.prev_vout = destvout;
+                utxos++;
             }
         }
-        else
+        else 
         {
             bp->notaries[bp->myind].src.prev_hash = bp->mysrcutxo;
             bp->notaries[bp->myind].dest.prev_hash = bp->mydestutxo;
-            
         }
+        if ( utxos == 2 )
+            bp->recvmask |= (1LL << senderind);
+        fprintf(stderr, "recvmask.%lu senderind.%i myind.%i\n",bp->recvmask, utxos == 2 ? senderind : -1, ((bp->recvmask & (1LL << bp->myind)) != 0) ? bp->myind : -1);
         if ( bestmask != 0 )
             bp->notaries[senderind].bestmask = bestmask;
         if ( recvmask != 0 )
@@ -2015,13 +2020,8 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             //fprintf(stderr,"{%d %x} ",senderind,paxwdcrc);
         }
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
-        //fprintf(stderr, "recvmask.%lu adding senderind.%i myind.%i\n",bp->recvmask, senderind, bp->myind );
-        bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
-        
-        if ( bp->bestmask == 0 ) // || time(NULL) >= bp->starttime+70 )
-        {
-            bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
-        }
+        if ( bp->bestmask == 0 )
+            bp->bestmask = dpow_maskmin(bp->recvmask,dp,bp,&bp->bestk);
         
         dpow_bestconsensus(dp,bp);
         if ( bp->bestk >= 0 )
@@ -2144,6 +2144,18 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     else
     {
         int32_t i,bestmatches=0,matches = 0,dispflag = 0;
+        if ( dp->lastbanheight[senderind] != 0 && dp->previous.blockhash.height < dp->lastbanheight[senderind] )
+        {
+            fprintf(stderr, "node.%i is banned last checkpoint ht.%i vs lastbanheight.%i \n",senderind, dp->previous.blockhash.height, dp->lastbanheight[senderind]);
+            memset(np->srcutxo.bytes,0,32);
+            memset(np->destutxo.bytes,0,32);
+            memset(&np->recvmask,0,sizeof(np->recvmask));
+        }
+        else if ( dp->lastbanheight[senderind] != 0 )
+        {
+            fprintf(stderr, "node.%i is unbanned last checkpoint ht.%i vs lastbanheight.%i\n", senderind, dp->previous.blockhash.height, dp->lastbanheight[senderind]);
+            dp->lastbanheight[senderind] = 0;
+        }
         dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
         if ( np->bestk >= 0 )
         {

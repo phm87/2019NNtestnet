@@ -145,7 +145,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         jaddistr(addresses,coinaddr);
         if ( myinfo->nosplit == 0 && (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
         {
-            if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx)) != 0 )
+            if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx, 0)) != 0 )
             {
                 printf("sendrawtransaction.(%s)\n",sendtx);
                 free(sendtx);
@@ -281,13 +281,13 @@ void dpow_statemachinestart(void *ptr)
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
-    dpow_getchaintip(myinfo,&merkleroot,&srchash,&srctime,dp->desttx,&dp->numdesttx,dest);
-    dpow_getchaintip(myinfo,&merkleroot,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
     if ( src == 0 || dest == 0 )
     {
         printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
         return;
     }
+    dpow_getchaintip(myinfo,&merkleroot,&srchash,&srctime,dp->desttx,&dp->numdesttx,dest);
+    dpow_getchaintip(myinfo,&merkleroot,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
     MoMdepth = 0;
     memset(&MoM,0,sizeof(MoM));
     if ( strcmp(src->symbol,"KMD") == 0 )
@@ -306,6 +306,7 @@ void dpow_statemachinestart(void *ptr)
         dp->blocks[blockindex] = bp;
         portable_mutex_unlock(&dpowT_mutex);
         //printf("blockindex.%i allocate bp for %s ht.%d -> %s\n",blockindex,src->symbol,checkpoint.blockhash.height,dest->symbol);
+        bp->pendingprevDESTHT = dp->DESTHEIGHT;
         bp->MoM = MoM;
         bp->MoMdepth = MoMdepth;
         bp->CCid = dp->fullCCid & 0xffff;
@@ -541,8 +542,9 @@ void dpow_statemachinestart(void *ptr)
             bp->notaries[myind].ratifydestutxo = ep->dest.prev_hash;
             bp->notaries[myind].ratifydestvout = ep->dest.prev_vout;
         }
-        else
+        else if ( bits256_nonz(ep->src.prev_hash) != 0 && bits256_nonz(ep->dest.prev_hash) != 0 )
         {
+            bp->recvmask |= (1LL << myind);
             bp->mysrcutxo = ep->src.prev_hash;
             bp->mydestutxo = ep->dest.prev_hash;
         }
@@ -555,18 +557,20 @@ void dpow_statemachinestart(void *ptr)
         dpow_signedtxgen(myinfo,dp,src,bp,bp->myind,1LL<<bp->myind,bp->myind,DPOW_SIGCHANNEL,0,0);
     }*/
 
-    bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
     bp->height = checkpoint.blockhash.height;
     bp->timestamp = checkpoint.timestamp;
     bp->hashmsg = checkpoint.blockhash.hash;
     bp->myind = myind;
+    bp->minnodes = bitweight(dp->lastrecvmask)-1; // use one less than the maximum possible may need to lower it more than this. 
+    if ( bp->minnodes < bp->minsigs )
+        bp->minnodes = bp->minsigs;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
         {
-            //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+            printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
             goto end;
         }
@@ -601,9 +605,6 @@ void dpow_statemachinestart(void *ptr)
                 src_or_dest = 0;
             else src_or_dest = 1;
             extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
-            // This is no longer be needed... It can stop notarizations dead if they have not happened for 1440 blocks.
-            //if ( extralen == -1 )
-            //    break;
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
@@ -633,8 +634,14 @@ void dpow_statemachinestart(void *ptr)
         {
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             dpow_nanomsg_update(myinfo);
+            // on each iteration lower amount of needed nodes in recvmask by 1/8th of the total nodes. 
+            // when first launched this will be 0 because you wont have lastrecvmask. After one notarizaion has passed all nodes online will have the same lastrecvmask. 
+            // This gives us an ideal target, the recvmask continues to update for the entire duration and is a consensus value agreed upon by all nodes. 
+            bp->minnodes = bp->minnodes - ((bp->numnotaries+(bp->numnotaries % 2)) / 8);
+            if ( bp->minnodes < bp->minsigs ) 
+                bp->minnodes = bp->minsigs;
         }
-        else
+        /*else
         {
             dp->lastnotarized = checkpoint.blockhash.hash;
             printf("notarized %s %s\n",dp->symbol,bits256_str(str,checkpoint.blockhash.hash));
@@ -643,12 +650,12 @@ void dpow_statemachinestart(void *ptr)
         {
             printf("abort pending ratify\n");
             break;
-        }
+        } */
         sleep(30);
     }
-    printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
-    dp->lastrecvmask = bp->recvmask;
+    //dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
+    printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx bitweight(lastrecvmask).%d paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bitweight(dp->lastrecvmask),bp->paxwdcrc,src,dest);
 #if STAKEDTEST
     // We need to wait for notarized confirm here. If the notarization is reorged for any reason we need to rebroadcast it,
     // because the mempool is stupid after the sapling update, or Alright might be playing silly games.
@@ -701,7 +708,7 @@ void dpow_statemachinestart(void *ptr)
             } else fprintf(stderr, "[%s] get raw transaction error\n", dp->dest);
             if ( send_src == 1 )
             {
-                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->destcoin, desttx);
+                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->destcoin, desttx,0);
                 free(tmpstr);
             }
         }
@@ -735,7 +742,7 @@ void dpow_statemachinestart(void *ptr)
             } else fprintf(stderr, "[%s] get raw transaction error\n", dp->symbol);
             if ( send_src == 1 )
             {
-                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->srccoin, srctx);
+                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->srccoin, srctx,0);
                 free(tmpstr);
             }
         }
