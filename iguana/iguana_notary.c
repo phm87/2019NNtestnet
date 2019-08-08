@@ -78,6 +78,11 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
     void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0;
+    struct iguana_info *src,*dest;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
+    if (src->active == 0 || dest->active == 0)
+	    return;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
@@ -161,6 +166,11 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
 void dpow_approvedset(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_checkpoint *checkpoint,bits256 *txs,int32_t numtx)
 {
     int32_t i,j; bits256 txid;
+    struct iguana_info *src,*dest;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
+    if (src->active == 0 || dest->active == 0)
+	    return;
     if ( txs != 0 )
     {
         for (i=0; i<numtx; i++)
@@ -184,6 +194,11 @@ void dpow_approvedset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
 void dpow_destconfirm(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_checkpoint *checkpoint)
 {
     int32_t i;
+    struct iguana_info *src,*dest;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
+    if (src->active == 0 || dest->active == 0)
+	    return;
     if ( bits256_nonz(checkpoint->approved.hash) != 0 )
     {
         for (i=DPOW_FIFOSIZE-1; i>0; i--)
@@ -194,6 +209,11 @@ void dpow_destconfirm(struct supernet_info *myinfo,struct dpow_info *dp,struct d
 
 void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
+    struct iguana_info *src,*dest;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
+    if (src->active == 0 || dest->active == 0)
+	    return;
     dp->destupdated = timestamp;
     dp->DESTHEIGHT = height;
     dpow_checkpointset(myinfo,&dp->destchaintip,height,hash,timestamp,blocktime);
@@ -210,13 +230,15 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 {
     int32_t height,num; uint32_t blocktime; bits256 blockhash,merkleroot; struct iguana_info *src,*dest;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
+    if (src->active == 0 || dest->active == 0)
+	    return;
     //if ( strcmp(dp->symbol,"KMD") == 0 )
     {
         num = dpow_nanomsg_update(myinfo);
         //fprintf(stderr,"nano.%d ",num);
     }
-    src = iguana_coinfind(dp->symbol);
-    dest = iguana_coinfind(dp->dest);
     if ( src != 0 && dest != 0 )
     {
         //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
@@ -333,11 +355,19 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     //if ( myinfo->numdpows == 1 )
     //    komodo_assetcoins(-1);
     if ( iguana_coinfind(symbol) == 0 )
-        return(clonestr("{\"error\":\"cant dPoW an inactive coin\"}"));
+        return(clonestr("{\"error\":\"cant dPoW an inactive coin (run the COIN_7775)\"}"));
     if ( strcmp(symbol,"KMD") == 0 && iguana_coinfind("BTC") == 0 )
         return(clonestr("{\"error\":\"cant dPoW KMD without BTC\"}"));
     else if ( iguana_coinfind(dest) == 0 )
         return(clonestr("{\"error\":\"cant dPoW without KMD (dest)\"}"));
+    struct iguana_info *dest,*src;
+    src = iguana_coinfind(symbol);
+    dest = iguana_coinfind("BTC");
+    if ( strcmp(symbol,"KMD") == 0 && dest->active == 0 )
+        return(clonestr("{\"error\":\"cant dPoW without BTC active (use startcoin iguana method). If you used stopcoin or pausecoin on BTC earlier on the iguana instance running, it is fine. If you didn't use these calls, please report a bug to phm87.\"}"));
+	// Remark: if the NN op sets active to 0 of KMD, maybe he can reach this error
+    if ( src->active == 0 )
+         return(clonestr("{\"error\":\"cant dPoW an inactive coin (use the startcoin iguana method). This error means you used stopcoin or pausecoin previously. If you didn't use these calls, please report a bug to phm87.\"}"));
     if ( myinfo->numdpows > 0 )
     {
         for (i=0; i<myinfo->numdpows; i++)
@@ -623,6 +653,8 @@ void iguana_notarystats(int32_t totals[64],int32_t dispflag)
 // slow and should be redone to use calc_MoM rpc
 int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t height,struct komodo_ccdataMoMoM *mdata)
 {
+    if ( coin->active == 0 )
+	    return (int32_t) 0;
     cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[256]; bits256 spenttxid; uint64_t notarymask=0; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
     if ( (txobj= dpow_gettransaction(myinfo,coin,txid)) != 0 )
     {
@@ -720,6 +752,8 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
 
 int32_t dpow_hasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson,int32_t ht,struct komodo_ccdataMoMoM *mdata)
 {
+    if ( coin->active == 0 )
+	    return (int32_t) 0;
     int32_t i,n,hasnotarization = 0; bits256 txid; cJSON *txarray;
     *nothtp = 0;
     *signedmaskp = 0;
@@ -742,6 +776,8 @@ STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks)
     ht = height;
     if ( (coin= iguana_coinfind(symbol)) != 0 )
     {
+	if ( coin->active == 0 )
+	    return(clonestr("{\"error\":\"coin is inactive (use startcoin iguana method)\"}"));
         if ( (retjson= dpow_getinfo(myinfo,coin)) != 0 )
         {
             maxheight = jint(retjson,"blocks");
@@ -805,6 +841,8 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
     uint8_t pubkeys[64][33]; cJSON *infojson; char coinaddr[64],cmd[1024]; uint64_t signedmask; int32_t i,j,n,sendflag=0,current=0,height; FILE *fp; double vals[64],sum,val = 0.01;
     if ( (coin= iguana_coinfind("KMD")) == 0 )
         return(clonestr("{\"error\":\"need KMD active\"}"));
+    if ( coin->active == 0 )
+	return(clonestr("{\"error\":\"need KMD active (use startcoin iguana method)\"}"));
     if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
     {
         current = jint(infojson,"blocks");
@@ -819,6 +857,8 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
         memset(vals,0,sizeof(vals));
         if ( (coin= iguana_coinfind("BTC")) != 0 )
         {
+	    if ( coin->active == 0 )
+		return(clonestr("{\"error\":\"need BTC active (use startcoin iguana method)\"}"));
             if ( (fp= fopen("signedmasks","rb")) != 0 )
             {
                 while ( 1 )
@@ -883,6 +923,11 @@ cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     int32_t i; cJSON *retjson,*item; char hexstr[64];
     retjson = cJSON_CreateArray();
     if ( dp == 0 || bp == 0 )
+        return(retjson);
+    struct iguana_info *src,*dest;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
+    if ( src->active == 0 || dest->active == 0 )
         return(retjson);
     for (i=0; i<bp->numnotaries; i++)
     {
