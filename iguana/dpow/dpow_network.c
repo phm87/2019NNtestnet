@@ -528,6 +528,7 @@ void dex_channelsend(struct supernet_info *myinfo,bits256 srchash,bits256 destha
 
 void dpow_randipbits(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *retjson)
 {
+    if ( coin == 0 || coin->active == 0 ) return;
     int32_t m; uint32_t ipbits; char *coinstr; cJSON *infojson;
     if ( is_cJSON_Array(retjson) == 0 )
     {
@@ -557,7 +558,7 @@ return(clonestr("{\"error\":\"basilisk disabled\"}"));
     {
         datalen = dex_rwrequest(0,dexp->packet,&dexreq);
         //printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
-        if ( (coin= iguana_coinfind(dexreq.name)) != 0 )
+        if ( (coin= iguana_coinfind(dexreq.name)) != 0 && coin != 0 && coin->active != 0 )
         {
             if ( dexreq.func == 'T' )
             {
