@@ -139,7 +139,7 @@ uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
     int32_t j,m,k; uint64_t bestmask,mask = 0;//bp->require0;
-    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return(bastmask);
+    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return(bestmask);
     bestmask = 0;
     *lastkp = -1;
     m = 0;//bp->require0;
