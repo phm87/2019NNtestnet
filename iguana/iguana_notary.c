@@ -360,13 +360,13 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         return(clonestr("{\"error\":\"cant dPoW KMD without BTC\"}"));
     else if ( iguana_coinfind(dest) == 0 )
         return(clonestr("{\"error\":\"cant dPoW without KMD (dest)\"}"));
-    struct iguana_info *dest,*src;
-    src = iguana_coinfind(symbol);
-    dest = iguana_coinfind("BTC");
-    if ( strcmp(symbol,"KMD") == 0 && dest->active == 0 )
+    struct iguana_info *cdest,*csrc;
+    csrc = iguana_coinfind(symbol);
+    cdest = iguana_coinfind("BTC");
+    if ( strcmp(symbol,"KMD") == 0 && cdest->active == 0 )
         return(clonestr("{\"error\":\"cant dPoW without BTC active (use startcoin iguana method). If you used stopcoin or pausecoin on BTC earlier on the iguana instance running, it is fine. If you didn't use these calls, please report a bug to phm87.\"}"));
 	// Remark: if the NN op sets active to 0 of KMD, maybe he can reach this error
-    if ( src->active == 0 )
+    if ( csrc->active == 0 )
          return(clonestr("{\"error\":\"cant dPoW an inactive coin (use the startcoin iguana method). This error means you used stopcoin or pausecoin previously. If you didn't use these calls, please report a bug to phm87.\"}"));
     if ( myinfo->numdpows > 0 )
     {
