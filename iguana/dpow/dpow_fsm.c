@@ -15,6 +15,7 @@
 
 struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_block *bp,int32_t height,int32_t *senderindp,uint8_t *senderpub)
 {
+    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return (0);
     int32_t i;
     *senderindp = -1;
     for (i=0; i<bp->numnotaries; i++)
@@ -31,6 +32,7 @@ struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_bloc
 
 void dpow_utxo2entry(struct dpow_block *bp,struct dpow_entry *ep,struct dpow_utxoentry *up)
 {
+    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return (0);
     int32_t i;
     for (i=0; i<bp->numnotaries; i++)
         bp->notaries[i].othermask |= up->othermasks[i];
@@ -46,6 +48,7 @@ void dpow_utxo2entry(struct dpow_block *bp,struct dpow_entry *ep,struct dpow_utx
 
 void dpow_entry2utxo(struct dpow_utxoentry *up,struct dpow_block *bp,struct dpow_entry *ep)
 {
+    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return (0);
     int32_t i;
     up->commit = bp->commit;
     up->hashmsg = bp->hashmsg;
@@ -68,6 +71,7 @@ void dpow_entry2utxo(struct dpow_utxoentry *up,struct dpow_block *bp,struct dpow
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
+    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return (0);
     int32_t i,src_or_dest,myind = -1; bits256 txid,srchash; struct iguana_info *coin; char str[65],str2[65];
     memset(srchash.bytes,0,sizeof(srchash));
     dpow_notaryfind(myinfo,bp,height,&myind,dp->minerkey33);
@@ -123,6 +127,8 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
 
 int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin)
 {
+    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return (0);
+    if ( coin == 0 || coin->active == 0 ) return (0);
     int32_t haveutxo,completed,minutxo,n; bits256 signedtxid; cJSON *addresses; char *rawtx,*sendtx;
     if ( strcmp("BTC",coin->symbol) == 0 )
     {
@@ -233,6 +239,7 @@ int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txi
 bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
     bits256 MoM; cJSON *MoMjson,*infojson; int32_t prevMoMheight;
+    if ( coin == 0 || coin->active == 0) return(MoM);
     *MoMdepthp = 0;
     memset(MoM.bytes,0,sizeof(MoM));
     if ( dpow_smallopreturn(coin->symbol) != 0 ) // 80 byte OP_RETURN limit
