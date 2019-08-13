@@ -32,7 +32,7 @@ struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_bloc
 
 void dpow_utxo2entry(struct dpow_block *bp,struct dpow_entry *ep,struct dpow_utxoentry *up)
 {
-    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return (0);
+    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return;
     int32_t i;
     for (i=0; i<bp->numnotaries; i++)
         bp->notaries[i].othermask |= up->othermasks[i];
@@ -48,7 +48,7 @@ void dpow_utxo2entry(struct dpow_block *bp,struct dpow_entry *ep,struct dpow_utx
 
 void dpow_entry2utxo(struct dpow_utxoentry *up,struct dpow_block *bp,struct dpow_entry *ep)
 {
-    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return (0);
+    if ( bp->destcoin == 0 || bp->srccoin == 0 || bp->destcoin->active == 0 || bp->srccoin->active == 0 ) return;
     int32_t i;
     up->commit = bp->commit;
     up->hashmsg = bp->hashmsg;
