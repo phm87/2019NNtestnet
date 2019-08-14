@@ -570,8 +570,8 @@ void dpow_statemachinestart(void *ptr)
     bp->hashmsg = checkpoint.blockhash.hash;
     bp->myind = myind;
     bp->minnodes = bitweight(dp->lastrecvmask)-1; // use one less than the maximum possible may need to lower it more than this. 
-    if ( bp->minnodes < bp->minsigs*2 )
-        bp->minnodes = bp->minsigs*2;
+    if ( bp->minnodes < bp->minsigs)
+        bp->minnodes = bp->minsigs;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
