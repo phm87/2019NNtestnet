@@ -2097,7 +2097,8 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     for ( i=dp->numbestks; n<64; i-- )
                     {
                         i = ( (i<0) ? 63 : i );
-                        printf("%i, ", dp->bestks[i]);
+                        if ( dp->bestks[i] != -1 )
+                            printf("%i, ", dp->bestks[i]);
                         n++;
                     }
                     printf("\n"RESET);
