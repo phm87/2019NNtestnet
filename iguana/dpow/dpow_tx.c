@@ -689,13 +689,16 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                                 bp->state = state;
                                 dpow_send(myinfo,dp,bp,txid,bp->hashmsg,(src_or_dest != 0) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32);
                                 printf("complete statemachine.%s ht.%d state.%d (%x %x)\n",coin->symbol,bp->height,bp->state,bp->hashmsg.uints[0],txid.uints[0]);
-                                dp->lastnotarized = bp->hashmsg;
-                                dp->lastrecvmask = bp->recvmask;
-                                dp->prevDESTHEIGHT = bp->pendingprevDESTHT;
-                                dp->previous = dp->last;
-                                dp->prevnotatxid = bp->desttxid;
-                                dp->bestks[dp->numbestks] = bp->bestk;
-                                dp->numbestks = (dp->numbestks==64 ? 0 : dp->numbestks+1);
+                                if ( src_or_dest == 0 )
+                                {
+                                    dp->lastnotarized = bp->hashmsg;
+                                    dp->lastrecvmask = bp->recvmask;
+                                    dp->prevDESTHEIGHT = bp->pendingprevDESTHT;
+                                    dp->previous = dp->last;
+                                    dp->prevnotatxid = bp->desttxid;
+                                    dp->bestks[dp->numbestks] = bp->bestk;
+                                    dp->numbestks = (dp->numbestks==64 ? 0 : dp->numbestks+1);
+                                }
                             }
                         } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,signedtxid));
                     }
