@@ -72,7 +72,6 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
 char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *params)
 {
     printf("[phm87] post_process_bitcoind_RPC %s\n", debugstr);
-    if ( coin == 0 || coin->active == 0 ) return "";
     long i,j,len;
     char *retstr = 0;
     cJSON *json,*result,*error;
