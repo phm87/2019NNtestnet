@@ -33,7 +33,7 @@ char *sglue(GLUEARGS,char *agent,char *method)
     jaddstr(json,"method",method);
     if ( coin != 0 )
         jaddstr(json,"coin",coin->symbol);
-    if ( coin->active == 0 )
+    if ( coin == 0 || coin->active == 0 )
         return(clonestr("{\"error\":\"[phm87] coin not active\"}"));
     if ( userpass != 0 )
         jaddstr(json,"userpass",userpass);
