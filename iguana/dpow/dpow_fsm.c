@@ -639,7 +639,7 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( bp->state != 0xffffffff )
         {
-            fprintf(stderr, "[%s] iterations.%i minnodes.%i\n",bp->srccoin->symbol, iterations, bp->minnodes);
+            fprintf(stderr, YELLOW"[%s:%i] iterations.%i duratinon.%i minnodes.%i\n"RESET,checkpoint.blockhash.height,bp->srccoin->symbol, iterations, (uint32_t)time(NULL)-bp->startime,bp->minnodes);
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             dpow_nanomsg_update(myinfo);
             // on each iteration lower amount of needed nodes in recvmask by 1/8th of the total nodes. 
