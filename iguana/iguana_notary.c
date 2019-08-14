@@ -494,7 +494,6 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     //PAX_init();
     dp->fullCCid = dpow_CCid(myinfo,src);
     myinfo->numdpows++;
-     = {-1};
     memset(dp->besks,-1,sizeof(dp->besks));
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
