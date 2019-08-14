@@ -95,7 +95,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
-            fprintf(stderr,YELLOW"suppress %s -> KMD.%i more blocks\n"RESET,dp->symbol,dp->prevDESTHEIGHT+supressfreq-dp->DESTHEIGHTd);
+            fprintf(stderr,YELLOW"suppress %s -> KMD.%i more blocks\n"RESET,dp->symbol,dp->prevDESTHEIGHT+supressfreq-dp->DESTHEIGHT);
         }
     }
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
