@@ -494,7 +494,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
     //PAX_init();
     dp->fullCCid = dpow_CCid(myinfo,src);
     myinfo->numdpows++;
-    memset(dp->besks,-1,sizeof(dp->besks));
+    memset(dp->bestks,-1,sizeof(dp->bestks));
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
     printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d, num.%d freq.%d minsigs.%d CCid.%u\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid,myinfo->numdpows,dp->freq,dp->minsigs,dp->fullCCid);
