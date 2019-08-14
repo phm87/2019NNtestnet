@@ -318,9 +318,6 @@ char *bitcoind_RPCnew(void *curl_handle,char **retstrp,char *debugstr,char *url,
     struct MemoryStruct chunk;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res;
     char *bracket0,*bracket1,*retstr,*databuf = 0; long len; int32_t flag=0,specialcase,numretries; double starttime;
-    struct iguana_info * coin;
-    coin = iguana_coinfind(debugstr);
-    if ( coin == 0 || coin->active == 0 ) return "";
     bitcoind_init();
     numretries = 0;
     if ( url[0] == 0 )
