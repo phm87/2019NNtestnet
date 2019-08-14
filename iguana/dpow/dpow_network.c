@@ -2092,7 +2092,15 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             {
                 if ( bp->pendingbestk < 0 )//bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
                 {
-                    printf(GREEN"new PENDING BESTK (%d %llx) state.%d\n"RESET,bp->bestk,(long long)bp->bestmask,bp->state);
+                    printf(GREEN"new PENDING BESTK (%d %llx) state.%d last 64 bestks: ",bp->bestk,(long long)bp->bestmask,bp->state);
+                    int n = 0;
+                    for ( i=dp->numbestks; n<64; i-- )
+                    {
+                        i = ( (i<0) ? 63 : i );
+                        printf("%i, ", dp->bestks[i]);
+                        n++;
+                    }
+                    printf("\n"RESET);
                     bp->pendingbestk = bp->bestk;
                     bp->pendingbestmask = bp->bestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
