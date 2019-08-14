@@ -33,6 +33,8 @@ char *sglue(GLUEARGS,char *agent,char *method)
     jaddstr(json,"method",method);
     if ( coin != 0 )
         jaddstr(json,"coin",coin->symbol);
+    if ( coin->active == 0 )
+        return(clonestr("{\"error\":\"[phm87] coin not active\"}"));
     if ( userpass != 0 )
         jaddstr(json,"userpass",userpass);
     if ( coin != 0 && coin->FULLNODE >= 0 && coin->chain->userpass[0] != 0 )
@@ -679,6 +681,8 @@ int32_t is_bitcoinrpc(struct supernet_info *myinfo,char *method,char *remoteaddr
 
 char *iguana_bitcoinrpc(struct supernet_info *myinfo,uint16_t port,struct iguana_info *coin,char *method,cJSON *params[16],int32_t n,cJSON *json,char *remoteaddr,cJSON *array)
 {
+    if ( coin == 0 || coin->active == 0 )
+        return(clonestr("{\"error\":\"[phm87]coin is not active\"}"));
     int32_t i;
     for (i=0; i<sizeof(RPCcalls)/sizeof(*RPCcalls); i++)
     {
@@ -742,6 +746,8 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
         //printf("method.(%s) (%s) remote.(%s) symbol.(%s)\n",method,jprint(json,0),remoteaddr,symbol);
         if ( method != 0 && symbol[0] != 0 && (coin != 0 || (coin= iguana_coinfind(symbol)) != 0) )
         {
+            if ( coin->active == 0 )
+                return(clonestr("{\"error\":\"[phm87]coin is not active\"}"));
             if ( (immed= juint(json,"immediate")) != 0 )
             {
                 if ( iguana_immediate(coin,immed) == 0 )
@@ -1113,6 +1119,13 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             } else arg = argjson;
             //printf("ARGJSON.(%s)\n",jprint(arg,0));
             coin = iguana_coinchoose(myinfo,symbol, sizeof(symbol), arg,port);
+            if ( coin == 0 || coin->active == 0 )	{
+                free_json(argjson);
+                free_json(json);
+		if ( tmpjson != 0 )
+                    free(tmpjson);
+                return(retstr);
+	    }
             if ( userpass != 0 && jstr(arg,"userpass") == 0 )
                 jaddstr(arg,"userpass",userpass);
             retstr = SuperNET_JSON(myinfo,coin,arg,remoteaddr,port);
