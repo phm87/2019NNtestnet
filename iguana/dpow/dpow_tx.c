@@ -133,31 +133,50 @@ uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 
 uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t j,m,k,z,n; uint64_t bestmask,mask = 0;//bp->require0;
+    int32_t j,m,k,z,n,i,p; uint64_t bestmask,mask = 0;//bp->require0;
     bestmask = 0;
     *lastkp = -1;
     m = 0;//bp->require0;
+    for (z=n=0; z<bp->numnotaries; z++)
+        if ( bitweight(bp->notaries[z].recvmask) >= bp->minnodes )
+            n++;
+    if ( n < bp->minnodes )
+        return(bestmask);
+
+    // replace offline nodes with online nodes. 
+    uint8_t rndnodes[32];
+    fprintf(stderr, BLUE"random nodes: ");
+    for ( i=0; i<32; i++ )
+    {
+        rndnodes[i] = dp->prevnotatxid.bytes[i] % bp->numnotaries;
+        printf("%i, ", rndnodes[i]);
+    }
+    printf("\n"RESET);
     for (j=0; j<bp->numnotaries; j++)
     {
-        k = DPOW_MODIND(bp,j,dp->freq);
-        if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 && bp->paxwdcrc == bp->notaries[k].paxwdcrc )
+        k = i = DPOW_MODIND(bp,j,dp->freq);
+        for ( p=0; p<32; p++ ) 
         {
-            for (z=n=0; z<bp->numnotaries; z++)
-                if ( (bp->notaries[z].recvmask & (1LL << k)) != 0 )
-                    n++;
-            fprintf(stderr, "[%i] match_recvmask.%i vs %i \n",k, n, bp->minnodes);
-            if ( n >= bp->minnodes )
-            { 
-                mask |= (1LL << k);
-                if ( ++m == bp->minsigs )
-                {
-                    *lastkp = k;
-                    bestmask = mask;
-                }
+            if ( (bp->recvmask & (1LL << k)) != 0 )
+                break;
+            k += rndnodes[(k>>1)]+p;
+            while ( k >= bp->numnotaries ) 
+                k -= bp->numnotaries;
+            fprintf(stderr, CYAN">>>>>>> p.%i k.%i vs newk.%i inrecv.%i \n"RESET, p, i, k, ((bp->recvmask & (1LL << k)) != 0));
+        }
+        if ( (mask & (1LL << k)) == 0 && bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 && bp->paxwdcrc == bp->notaries[k].paxwdcrc )
+        {
+            mask |= (1LL << k);
+            if ( ++m == bp->minsigs )
+            {
+                *lastkp = k;
+                bestmask = mask;
+                char str[128]; sprintf(str,CYAN" -> newbestk.%i"RESET, k); 
+                fprintf(stderr,GREEN"[%s] ht.%i %llx minnodes.%i vs nodes.%i bestk.%i %s\n"RESET,bp->srccoin->symbol,bp->height,(long long)bestmask, bp->minnodes, n, i, (k == i) ? " " : str );
             }
         }
     }
-    //bp->recvmask |= mask;
+    bp->recvmask |= mask;
     if ( *lastkp >= 0 )
     {
         for (mask=j=0; j<bp->numnotaries; j++)
@@ -674,6 +693,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                                 dp->lastrecvmask = bp->recvmask;
                                 dp->prevDESTHEIGHT = bp->pendingprevDESTHT;
                                 dp->previous = dp->last;
+                                dp->prevnotatxid = bp->desttxid;
                             }
                         } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,signedtxid));
                     }
@@ -683,7 +703,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         // This could flag that utxo and skip it from now on, if its yours. Or you could track score of whos node is breaking notarizations. 
                         // Some nodes may call gettxout at a later time than others and it could return a false positive. 
                         bp->state = 0xffffffff;
-                        printf("dpow_sigscheck: [src.%s ht.%i] mismatched txid.%s vs %s\n",bp->srccoin->symbol,bp->height,bits256_str(str,txid),retstr);
+                        printf(BOLDRED"dpow_sigscheck: [src.%s ht.%i] mismatched txid.%s vs %s\n"RESET,bp->srccoin->symbol,bp->height,bits256_str(str,txid),retstr);
                         //dpow_heightfind2(myinfo,dp,bp->height);
 #ifdef LOGTX
                         FILE * fptr;
@@ -712,16 +732,16 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 */
                 
                 uint64_t maskdiff = bp->bestmask^failedbestmask;
-                fprintf(stderr, "failedbestmask.%llx bestmask.%llx maskdiff.%llx\n",(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
+                fprintf(stderr, BOLDRED"failedbestmask.%llx bestmask.%llx maskdiff.%llx\n"RESET,(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
                 for (j=0; j<bp->numnotaries; j++)
                     if ( (maskdiff & (1LL << j)) != 0 )
                     {
-                        fprintf(stderr, "node.%i has submitted incorrect sig, ban them from the next round\n", j);
+                        fprintf(stderr, BOLDRED"node.%i has submitted incorrect sig, ban them from the next round\n"RESET, j);
                         dp->lastbanheight[j] = bp->height;
                     }
                 
                 bp->state = 0xffffffff;
-                printf("failed notary tx verification\n");
+                printf(BOLDRED"failed notary tx verification\n"RESET);
             }
         } //else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
     }

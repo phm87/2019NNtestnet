@@ -230,7 +230,7 @@ int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txi
     return(-1);
 }
 
-bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
+bits256 dpow_calcMoM(uint32_t *MoMdepthp,bits256 *prevnotatxid, struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
     bits256 MoM; cJSON *MoMjson,*infojson; int32_t prevMoMheight;
     *MoMdepthp = 0;
@@ -253,6 +253,8 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 free_json(MoMjson);
             }
         }
+        if ( bits256_nonz(*prevnotatxid) == 0 )
+            *prevnotatxid = jbits256(infojson,"notarizedtxid");
         free_json(infojson);
     }
     if ( bits256_nonz(MoM) == 0 )
@@ -290,11 +292,15 @@ void dpow_statemachinestart(void *ptr)
     dpow_getchaintip(myinfo,&merkleroot,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
     MoMdepth = 0;
     memset(&MoM,0,sizeof(MoM));
+    MoM = dpow_calcMoM(&MoMdepth,&dp->prevnotatxid,myinfo,src,checkpoint.blockhash.height);
     if ( strcmp(src->symbol,"KMD") == 0 )
+    {
+        MoMdepth = 0;
+        memset(&MoM,0,sizeof(MoM));
         kmdheight = checkpoint.blockhash.height;
+    }
     else if ( strcmp(dest->symbol,"KMD") == 0 )
     {
-        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
         kmdheight = dest->longestchain;
     }
     if ( (bp= dpow_heightfind(myinfo,dp, checkpoint.blockhash.height)) == 0 )
@@ -564,8 +570,8 @@ void dpow_statemachinestart(void *ptr)
     bp->hashmsg = checkpoint.blockhash.hash;
     bp->myind = myind;
     bp->minnodes = bitweight(dp->lastrecvmask)-1; // use one less than the maximum possible may need to lower it more than this. 
-    if ( bp->minnodes < bp->minsigs )
-        bp->minnodes = bp->minsigs;
+    if ( bp->minnodes < bp->minsigs*2 )
+        bp->minnodes = bp->minsigs*2;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
@@ -592,6 +598,7 @@ void dpow_statemachinestart(void *ptr)
     //printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
     //dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
     //printf("done utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
+    int32_t iterations = 0;
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
         if ( bp->isratify == 0 )
@@ -611,7 +618,7 @@ void dpow_statemachinestart(void *ptr)
         {
             if ( bp->isratify == 0 )
             {
-                //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                printf(YELLOW"abort %s ht.%d due to new checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
                 break;
             }
         }
@@ -626,20 +633,24 @@ void dpow_statemachinestart(void *ptr)
             checkhash = dpow_getblockhash(myinfo,bp->srccoin,bp->height);
             if ( bits256_cmp(checkhash,bp->hashmsg) != 0 )
             {
-                printf("%s ht.%d %s got reorged to %s, abort notarization\n",bp->srccoin->symbol,bp->height,bits256_str(str,bp->hashmsg),bits256_str(str2,checkhash));
+                printf(YELLOW"%s ht.%d %s got reorged to %s, abort notarization\n"RESET,bp->srccoin->symbol,bp->height,bits256_str(str,bp->hashmsg),bits256_str(str2,checkhash));
                 break;
             }
         }
         if ( bp->state != 0xffffffff )
         {
+            fprintf(stderr, "[%s] iterations.%i minnodes.%i\n",bp->srccoin->symbol, iterations, bp->minnodes);
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             dpow_nanomsg_update(myinfo);
             // on each iteration lower amount of needed nodes in recvmask by 1/8th of the total nodes. 
             // when first launched this will be 0 because you wont have lastrecvmask. After one notarizaion has passed all nodes online will have the same lastrecvmask. 
             // This gives us an ideal target, the recvmask continues to update for the entire duration and is a consensus value agreed upon by all nodes. 
-            bp->minnodes = bp->minnodes - ((bp->numnotaries+(bp->numnotaries % 2)) / 8);
-            if ( bp->minnodes < bp->minsigs ) 
-                bp->minnodes = bp->minsigs;
+            if ( iterations > 1 )
+            {
+                bp->minnodes -= ((bp->numnotaries+(bp->numnotaries % 2)) / 8);
+                if ( bp->minnodes < bp->minsigs ) 
+                    bp->minnodes = bp->minsigs;
+            }
         }
         /*else
         {
@@ -652,6 +663,7 @@ void dpow_statemachinestart(void *ptr)
             break;
         } */
         sleep(30);
+        iterations++;
     }
     //dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
