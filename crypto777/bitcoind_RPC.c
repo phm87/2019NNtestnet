@@ -71,6 +71,10 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
 
 char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *params)
 {
+    printf("[phm87] post_process_bitcoind_RPC %s\n", debugstr);
+    struct iguana_info * coin;
+    coin = iguana_coinfind(debugstr);
+    if ( coin == 0 || coin->active == 0 ) return "";
     long i,j,len;
     char *retstr = 0;
     cJSON *json,*result,*error;
@@ -168,6 +172,9 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     if ( debugstr != 0 && strcmp(debugstr,"BTCD") == 0 && command != 0 && strcmp(command,"SuperNET") ==  0 )
         specialcase = 1;
     else specialcase = 0;
+    struct iguana_info * coin;
+    coin = iguana_coinfind(debugstr);
+    if ( coin == 0 || coin->active == 0 ) return "";
     if ( url[0] == 0 )
         strcpy(url,"http://127.0.0.1:7776");
     if ( specialcase != 0 && (0) )
@@ -317,6 +324,9 @@ char *bitcoind_RPCnew(void *curl_handle,char **retstrp,char *debugstr,char *url,
     struct MemoryStruct chunk;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res;
     char *bracket0,*bracket1,*retstr,*databuf = 0; long len; int32_t flag=0,specialcase,numretries; double starttime;
+    struct iguana_info * coin;
+    coin = iguana_coinfind(debugstr);
+    if ( coin == 0 || coin->active == 0 ) return "";
     bitcoind_init();
     numretries = 0;
     if ( url[0] == 0 )
