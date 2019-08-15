@@ -569,9 +569,9 @@ void dpow_statemachinestart(void *ptr)
     bp->timestamp = checkpoint.timestamp;
     bp->hashmsg = checkpoint.blockhash.hash;
     bp->myind = myind;
-    bp->minnodes = bitweight(dp->lastrecvmask)-1; // use one less than the maximum possible may need to lower it more than this. 
-    if ( bp->minnodes < bp->minsigs)
-        bp->minnodes = bp->minsigs;
+    bp->minnodes = bitweight(dp->lastrecvmask)-1; // use one less than the maximum possible, seems to work, as after 30s it drops by 1/8th and then all nodes are already well above the new mim. 
+    if ( bp->minnodes < bp->minsigs*2)
+        bp->minnodes = bp->minsigs*2;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
@@ -642,9 +642,14 @@ void dpow_statemachinestart(void *ptr)
             printf(YELLOW"[%s:%i] iterations.%i duratinon.%i minnodes.%i\n"RESET,bp->srccoin->symbol,checkpoint.blockhash.height, iterations, (uint32_t)time(NULL)-bp->starttime,bp->minnodes);
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             dpow_nanomsg_update(myinfo);
-            // on each iteration lower amount of needed nodes in recvmask by 1/8th of the total nodes. 
-            // when first launched this will be 0 because you wont have lastrecvmask. After one notarizaion has passed all nodes online will have the same lastrecvmask. 
-            // This gives us an ideal target, the recvmask continues to update for the entire duration and is a consensus value agreed upon by all nodes. 
+            /* 
+                Each iteration lower the amount of needed nodes in recvmask by 1/8th of the total nodes. 
+                when first launched this will be minsigs because you wont have lastrecvmask. After one notarizaion has passed all nodes online will have the same lastrecvmask. 
+                This gives us an ideal target, the recvmask continues to update for the entire duration and is a consensus value agreed upon by all nodes. 
+                To enter recvmask you must submit utxos, this is why listunspent time makes such a diffrence right now. 
+                With this change there is at least 30s before any nodes try to calcualte the bestmask of who notarizes. Gives ample time for all nodes to commit to the round with a valid utxo. 
+                I usually see 80% of rounds completing at 61-63s duration. Which seems much the same as it is now so it doesnt slow anything down. 
+            */
             if ( iterations > 1 )
             {
                 bp->minnodes -= ((bp->numnotaries+(bp->numnotaries % 2)) / 8);

@@ -136,20 +136,26 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
     int32_t j,m,k,z,n,i,p; uint64_t bestmask,mask = 0;//bp->require0;
     bestmask = 0;
     *lastkp = -1;
-    m = 0;//bp->require0;
+    m = 0;
+    /* 
+        Need to make sure majority of nodes agree on recvmask before calcuating and submitting bestmask and besk. 
+        This keeps the network in consensus. 
+        Notarizations are more reliable and better distributed amoung all nodes who are in a working state, rather than 
+        the first 13 nodes who see a bestk that is valid in their recvmask. 
+    */
     for (z=n=0; z<bp->numnotaries; z++)
         if ( bitweight(bp->notaries[z].recvmask) >= bp->minnodes )
             n++;
     if ( n < bp->minnodes )
         return(bestmask);
 
-    // replace offline nodes with online nodes. 
+    // Fetch the last nota txid and create a seed from it. 
     uint8_t rndnodes[32];
-    fprintf(stderr, BLUE"random nodes: ");
+    printf(BLUE"Random seed: ");
     for ( i=0; i<32; i++ )
     {
         rndnodes[i] = dp->prevnotatxid.bytes[i] % bp->numnotaries;
-        printf("%i, ", rndnodes[i]);
+        printf("%i ", rndnodes[i]);
     }
     printf("\n"RESET);
     for (j=0; j<bp->numnotaries; j++)
@@ -157,12 +163,31 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
         k = i = DPOW_MODIND(bp,j,dp->freq);
         for ( p=0; p<32; p++ ) 
         {
+            /* 
+            If our k value that is a node not in recvmask we need to choose another k value. 
+             Otherise it will just use k+1 and simply give the next node inline 2 bestks in a row, 
+             this gives a disadvantage to nodes who reside in the same k group as a node who is down. 
+            maybe we can base ht value in DPOW_MODIND off something other than block height, because it does not rotate cleanly though the 
+            bestks if one height is not notarized because it was wating on a KMD block due to the suppress logic.
+            We may need to change the suppress logic as it causes all kinds of undefined beheaviour until all nodes agree on it. if a node is lagging
+                by just one KMD block, it will not start dpow round at the same time as other nodes, I mitigated this somewhat by having all nodes start a round 
+                at the elegible ht until they see a completed notarization, and then update the kmdheight last used. Seems to get all nodes in consensus afer 2-3 rounds,
+                the kmdheight is a local value though and not agreed on in the consenus so nodes who can actually notarize may not try to. 
+            Suppress is mostly a problem when starting a network or having a lot of nodes join an existing network at the same time. 
+            
+            The below algo gets very close to good distrubution after a few days worth of notarizaions, likey can be improved more though. 
+            using the random seed, we could randomise the k value, rather than having it based off block height. 
+            would work by looping forwards from this value simply adding nodes in recvmask until it gets to minsigs. 
+               use seed[0] to create k value, check its in recvmask, if not, use the next number in the seed and try again. 
+               then to choose bestmask, start at k, and loop forwards to numnodes-1. If dont get to minsigs, start back at node[0]. 
+               of course we need to model this algo against the current one to see if it would be worth the time to change it. 
+            */
             if ( (bp->recvmask & (1LL << k)) != 0 )
                 break;
-            k += rndnodes[(k>>1)]+p;
+            k += rndnodes[(k>>1)]+p; // p is a modifier that increases k by 1, each time it selects a node not in recvmask, because the seed can be 0 it wont change k.
             while ( k >= bp->numnotaries ) 
                 k -= bp->numnotaries;
-            fprintf(stderr, CYAN">>>>>>> p.%i k.%i vs newk.%i inrecv.%i \n"RESET, p, i, k, ((bp->recvmask & (1LL << k)) != 0));
+            printf(CYAN">>>>>>> p.%i k.%i vs newk.%i inrecv.%i \n"RESET, p, i, k, ((bp->recvmask & (1LL << k)) != 0));
         }
         if ( (mask & (1LL << k)) == 0 && bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 && bp->paxwdcrc == bp->notaries[k].paxwdcrc )
         {
@@ -172,7 +197,7 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
                 *lastkp = k;
                 bestmask = mask;
                 char str[128]; sprintf(str,CYAN" -> newbestk.%i"RESET, k); 
-                fprintf(stderr,GREEN"[%s] ht.%i %llx minnodes.%i vs nodes.%i bestk.%i %s\n"RESET,bp->srccoin->symbol,bp->height,(long long)bestmask, bp->minnodes, n, i, (k == i) ? " " : str );
+                printf(GREEN"[%s] ht.%i %llx minnodes.%i vs nodes.%i bestk.%i %s\n"RESET,bp->srccoin->symbol,bp->height,(long long)bestmask, bp->minnodes, n, i, (k == i) ? " " : str );
             }
         }
     }
@@ -708,7 +733,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         // This could flag that utxo and skip it from now on, if its yours. Or you could track score of whos node is breaking notarizations. 
                         // Some nodes may call gettxout at a later time than others and it could return a false positive. 
                         bp->state = 0xffffffff;
-                        printf(BOLDRED"dpow_sigscheck: [src.%s ht.%i] mismatched txid.%s vs %s\n"RESET,bp->srccoin->symbol,bp->height,bits256_str(str,txid),retstr);
+                        printf(RED"dpow_sigscheck: [src.%s ht.%i] mismatched txid.%s vs %s\n"RESET,bp->srccoin->symbol,bp->height,bits256_str(str,txid),retstr);
                         //dpow_heightfind2(myinfo,dp,bp->height);
 #ifdef LOGTX
                         FILE * fptr;
@@ -733,20 +758,18 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                   here we catch the situation where a notary is either acting maliciously by submitting the wrong sigs for their selected utxo, or some bug or attack has caused the vouts to get mixed up.. 
                   all nodes that are online will 100% agree which signitures are false. 
                   we can temporarily skip them from the next round. This means at worst a malicious node can only break every second notarization. 
-                  (XOR) bestmask^failedbestmask to extract which node/s broke the transaction. Ban them from the next round. 
                 */
                 
                 uint64_t maskdiff = bp->bestmask^failedbestmask;
-                fprintf(stderr, BOLDRED"failedbestmask.%llx bestmask.%llx maskdiff.%llx\n"RESET,(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
+                printf(RED"failedbestmask.%llx bestmask.%llx maskdiff.%llx\n"RESET,(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
                 for (j=0; j<bp->numnotaries; j++)
                     if ( (maskdiff & (1LL << j)) != 0 )
                     {
-                        fprintf(stderr, BOLDRED"node.%i has submitted incorrect sig, ban them from the next round\n"RESET, j);
+                        printf(RED"[%s] has submitted incorrect sig, ban them from the next round\n"RESET, Notaries_elected[j][0]);
                         dp->lastbanheight[j] = bp->height;
                     }
-                
                 bp->state = 0xffffffff;
-                printf(BOLDRED"failed notary tx verification\n"RESET);
+                printf(RED"failed notary tx verification\n"RESET);
             }
         } //else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
     }

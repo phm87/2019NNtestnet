@@ -2152,17 +2152,20 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     else
     {
         int32_t i,bestmatches=0,matches = 0,dispflag = 0;
-        if ( dp->lastbanheight[senderind] != 0 && dp->previous.blockhash.height < dp->lastbanheight[senderind] )
+        if ( dp->lastbanheight[senderind] != 0 ) 
         {
-            fprintf(stderr, BLUE"node.%i is banned last checkpoint ht.%i vs lastbanheight.%i \n"RESET,senderind, dp->previous.blockhash.height, dp->lastbanheight[senderind]);
-            memset(np->srcutxo.bytes,0,32);
-            memset(np->destutxo.bytes,0,32);
-            memset(&np->recvmask,0,sizeof(np->recvmask));
-        }
-        else if ( dp->lastbanheight[senderind] != 0 )
-        {
-            fprintf(stderr, CYAN"node.%i is unbanned last checkpoint ht.%i vs lastbanheight.%i\n"RESET, senderind, dp->previous.blockhash.height, dp->lastbanheight[senderind]);
-            dp->lastbanheight[senderind] = 0;
+            if ( dp->previous.blockhash.height < dp->lastbanheight[senderind] )
+            {
+                printf(RED">>>>> [%s] Banned last checkpoint ht.%i vs lastbanheight.%i \n"RESET, Notaries_elected[senderind][0], dp->previous.blockhash.height, dp->lastbanheight[senderind]);
+                memset(np->srcutxo.bytes,0,32);
+                memset(np->destutxo.bytes,0,32);
+                np->srcvout = np->destvout = -1;
+            }
+            else 
+            {
+                printf(CYAN"<<<<< [%s] Unbanned last checkpoint ht.%i vs lastbanheight.%i\n"RESET, Notaries_elected[senderind][0], dp->previous.blockhash.height, dp->lastbanheight[senderind]);
+                dp->lastbanheight[senderind] = 0;
+            }
         }
         dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
         if ( np->bestk >= 0 )
