@@ -751,7 +751,8 @@ int32_t iguana_vinarray_check(cJSON *vinarray,bits256 txid,int32_t vout)
 int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys)
 {
     int32_t i,n,len = 0,extraused=0; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; uint64_t spendamount; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
-	len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
+	
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
 	uint32_t overwintered = msg->version >> 31;
 	uint32_t version = msg->version;
 	// for version 4 the ZK proof size is 192, otherwise 296

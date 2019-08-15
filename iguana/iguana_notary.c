@@ -83,7 +83,8 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
-        // This needs to be changed somehow.. Nodes who join do not get sent the prevKMD height so they all have diffrent numbers based on when they started dpow. 
+        // Nodes who join do not get sent the prevKMD height so they all have diffrent numbers based on when they started dpow.
+        // mitigated somewhat by saving the KMD height when a round is triggered to start and then updating the prevDESTHEIGHT, when it successfully completes. 
         int supressfreq = DPOW_CHECKPOINTFREQ;
 #if STAKED
         if ( is_STAKED(dp->symbol) != 0 )
@@ -95,7 +96,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
-            fprintf(stderr,YELLOW"suppress %s -> KMD.%i more blocks\n"RESET,dp->symbol,dp->prevDESTHEIGHT+supressfreq-dp->DESTHEIGHT);
+            printf(YELLOW"suppress %s -> KMD.%i more blocks\n"RESET,dp->symbol,dp->prevDESTHEIGHT+supressfreq-dp->DESTHEIGHT);
         }
     }
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
@@ -268,8 +269,8 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
             {
                 while ( dp->lastheight <= height )
                 {
-                    blockhash = dpow_getblockhash(myinfo,src,dp->lastheight++);
-                    dpow_srcupdate(myinfo,dp,dp->lastheight,blockhash,(uint32_t)time(NULL),blocktime);
+                    blockhash = dpow_getblockhash(myinfo,src,dp->lastheight);
+                    dpow_srcupdate(myinfo,dp,dp->lastheight++,blockhash,(uint32_t)time(NULL),blocktime);
                 }
             }
             /*else if ( time(NULL) > dp->lastsrcupdate+60 || height != dp->lastheight )

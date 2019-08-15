@@ -56,7 +56,7 @@ void dex_init(struct supernet_info *myinfo)
 
 int32_t signed_nn_send(struct supernet_info *myinfo,void *ctx,bits256 privkey,int32_t sock,void *packet,int32_t size)
 {
-    int32_t z,k,i,j,sentbytes,siglen = 0; uint8_t sig[65],pubkey33[33],signpubkey33[33]; struct signed_nnpacket *sigpacket; char wifstr[64];
+    int32_t i,j,sentbytes,siglen = 0; uint8_t sig[65],pubkey33[33],signpubkey33[33]; struct signed_nnpacket *sigpacket;
     if ( (sigpacket= calloc(1,size + sizeof(*sigpacket))) != 0 )
     {
         sigpacket->packetlen = size;
@@ -69,13 +69,16 @@ int32_t signed_nn_send(struct supernet_info *myinfo,void *ctx,bits256 privkey,in
                 break;
         }
         bitcoin_pubkey33(ctx,signpubkey33,privkey);
-        for (k=0; k<33; k++)
+        for (j=0; j<33; j++)
         {
             if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
             {
                 memcpy(sigpacket->sig64,sig+1,64);
                 if ( bitcoin_recoververify(ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
-                {            
+                {
+                    //for (i=0; i<33; i++)
+                    //    printf("%02x",pubkey33[i]);
+                    //printf(" signed pubkey\n");
                     if ( memcmp(pubkey33,signpubkey33,33) == 0 )
                     {
                         sentbytes = 0;
@@ -91,9 +94,9 @@ int32_t signed_nn_send(struct supernet_info *myinfo,void *ctx,bits256 privkey,in
                             }
                             usleep(1000);
                         }
-                        //for (z=0; z<32; z++)
-                        //    printf("%02x",sigpacket->packethash.bytes[z]);
-                        //printf("crc32.%08x sentbytes.%d\n",calc_crc32(0,(void *)sigpacket,size), sentbytes);
+                        //for (i=0; i<size+sizeof(*sigpacket); i++)
+                        //    printf("%02x",((uint8_t *)sigpacket)[i]);
+                        //printf(" <- nnsend.%d\n",sock);
                         free(sigpacket);
                         return(sentbytes - siglen);
                     }
@@ -125,8 +128,8 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
         recvbytes = 0;
     else*/ if ( (recvbytes= nn_recv(sock,&sigpacket,NN_MSG,0)) > 0 )
     {
-        //for (i=0; i<32; i++)
-        //    printf("%02x",sigpacket->packethash.bytes[i]);
+        //for (i=0; i<recvbytes; i++)
+        //    printf("%02x",((uint8_t *)sigpacket)[i]);
         //printf(" <- [%d] RECV.%d crc.%08x cmp.%d\n",i,recvbytes,calc_crc32(0,(void *)sigpacket,recvbytes),sigpacket->packetlen == recvbytes-sizeof(*sigpacket));
     }
     if ( sigpacket != 0 && recvbytes > sizeof(*sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
@@ -136,7 +139,7 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
         {
             if ( bitcoin_recoververify(myinfo->ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
             {
-                char *notary0 = "02f93c559a62cee528f87826f8c8f5bd423d47f137c04493c3e1ea8db1c040d647";
+                char *notary0 = "03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828";
                 // expand to official notaries
                 decode_hex(pubkey0,33,notary0);
                 if ( memcmp(pubkey0,pubkey33,33) == 0 )
@@ -154,6 +157,13 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
                         //printf("got signed packet from notary.%d\n",i);
                         *freeptrp = sigpacket;
                         return((int32_t)(recvbytes - sizeof(*sigpacket)));
+                    }
+                    if ( 0 && i < 2 )
+                    {
+                        int32_t j;
+                        for (j=0; j<33; j++)
+                            printf("%02x",notaries[i][j]);
+                        printf(" pubkey[%d]\n",i);
                     }
                 }
                 //for (i=0; i<33; i++)
@@ -1575,14 +1585,16 @@ int32_t dpow_crossconnected(uint64_t *badmaskp,struct dpow_block *bp,uint64_t be
     return(num);
 }
 
-//int32_t dpow_minnodes(struct dpow_block *bp);
-
 void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
 {
-    int8_t bestks[64]; uint32_t sortbuf[64],wts[64],owts[64],counts[64]; int32_t i,j,z,k,n,jk,median,numcrcs=0,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],badmask,matchesmask,recvmask=0,topmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
-    //memset(wts,0,sizeof(wts));
-    //memset(owts,0,sizeof(owts));
-    /*for (i=0; i<bp->numnotaries; i++)
+    int8_t bestks[64]; uint32_t counts[64]; int32_t i,j,z,k,n,jk,numdiff,besti,bestmatches = 0,matches = 0; uint64_t masks[64],badmask,recvmask=0;
+    /*
+    uint32_t sortbuf[64],wts[64],owts[64],counts[64];
+    int32_t median;
+    uint64_t topmask;
+    memset(wts,0,sizeof(wts));
+    memset(owts,0,sizeof(owts));
+    for (i=0; i<bp->numnotaries; i++)
     {
         recvmask = bp->notaries[i].recvmask;
         wts[i] = bitweight(recvmask);
@@ -1622,7 +1634,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
         jk++;
         
         if ( rand() % 10000 < 2)    
-            fprintf(stderr, "[%i] recv.%i vs min.%i max.%i sec.%u bestk.%i\n",i, bitweight(bp->notaries[i].recvmask), bp->minnodes, bp->numnotaries, (uint32_t)time(NULL)-bp->starttime,bp->notaries[i].bestk); 
+            printf("[%i] recv.%i vs min.%i max.%i sec.%u bestk.%i bestmsk.%llx\n",i, bitweight(bp->notaries[i].recvmask), bp->minnodes, bp->numnotaries, (uint32_t)time(NULL)-bp->starttime,bp->notaries[i].bestk, (long long)bp->notaries[i].bestmask); 
         
         if ( bp->notaries[i].bestk < 0 || bp->notaries[i].bestmask == 0 )
             continue;
@@ -1638,7 +1650,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
             masks[numdiff] = bp->notaries[i].bestmask;
             bestks[numdiff] = bp->notaries[i].bestk;
             counts[numdiff]++;
-            //fprintf(stderr,"j.%d numdiff.%d (%d %llx).%d\n",j,numdiff,bestks[numdiff],(long long)masks[numdiff],counts[numdiff]);
+            //printf("j.%d numdiff.%d (%d %llx).%d\n",j,numdiff,bestks[numdiff],(long long)masks[numdiff],counts[numdiff]);
             numdiff++;
         }
     }
@@ -1648,7 +1660,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
     besti = -1, matches = 0;
     for (i=0; i<numdiff; i++)
     {
-        //fprintf(stderr,"[%i] bestks.%d masks.%llx counts.%d numdiff.%d",i,bestks[i],(long long)masks[i],counts[i],numdiff);
+        //printf("[%i] bestks.%d masks.%llx counts.%d",i,bestks[i],(long long)masks[i],counts[i]);
         if ( counts[i] >= matches && bitweight(masks[i]) == bp->minsigs )
         {
             if ( dpow_crossconnected(&badmask,bp,masks[i]) == bp->minsigs )
@@ -1658,14 +1670,10 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
             }
         }
     }
-    //if ( besti == -1 )
-    //    fprintf(stderr,RED"<<<<<<<<< fail dpow_crossconnected numdiff.%i\n"RESET, numdiff);
-    // fails all the time... 
     for (i=0; i<bp->numnotaries; i++)
     {
         if ( ((1LL << i) & masks[besti]) != 0 )
         {
-            //fprintf(stderr, "[%i] matches.%d bestmatches.%d bestk.%d bestmask.%llx maskes_best.%llx)\n",i,matches,bestmatches,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,(long long)masks[besti]);
             if ( bp->notaries[i].bestmask == masks[besti] )
                 bestmatches++;
         }
@@ -2008,7 +2016,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             //    fprintf(stderr, MAGENTA"[%s] : %s is in recvmask %llx\n"RESET,dp->symbol,Notaries_elected[senderind][0],(long long)bp->recvmask);
         }
         if ( (bp->recvmask & (1LL << bp->myind)) == 0 && rand() % 100 < 1 )
-            fprintf(stderr, RED"[%s] : %s is not in recvmask.%llx ... check utxos\n"RESET,dp->symbol,Notaries_elected[bp->myind][0],(long long)bp->recvmask);
+            printf(RED"[%s] : %s is not in recvmask.%llx ... check utxos\n"RESET,dp->symbol,Notaries_elected[bp->myind][0],(long long)bp->recvmask);
         
         if ( bestmask != 0 )
             bp->notaries[senderind].bestmask = bestmask;
@@ -2049,7 +2057,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     else bp->destsigsmasks[bestk] &= ~(1LL << senderind);
                 }
             }
-        }        
+        }
         if ( bp->bestk >= 0 )
         {
             flag = -1;
@@ -2269,7 +2277,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         printf("maxiters expired for signed_nn_send dpowsock.%d\n",myinfo->dpowsock);
     //portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
-    if ( 0 )
+    if ( 0 && bp->myind == 0 )
         printf("%d NANOSEND.%d %s.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,dp->symbol,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
 
@@ -2344,7 +2352,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     if ( np->datalen == (size - sizeof(*np)) )
                     {
                         crc32 = calc_crc32(0,np->packet,np->datalen);
-                        dp = 0;                    
+                        dp = 0;
                         for (i=0; i<myinfo->numdpows; i++)
                         {
                             if ( strcmp(np->symbol,myinfo->DPOWS[i]->symbol) == 0 )
@@ -2362,9 +2370,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                                 dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,sizeof(np->ipbits)/sizeof(*np->ipbits),np->senderind,np->myipbits);
                                 if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                                 {
-                                    //char str[65];
-                                    //if ( np->senderind == 18 || np->senderind == 57 )
-                                    //    printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);
+                                    //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);
                                     if ( np->senderind >= 0 && np->senderind < bp->numnotaries )
                                     {
                                         if ( memcmp(bp->notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )

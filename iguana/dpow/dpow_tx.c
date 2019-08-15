@@ -184,7 +184,8 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
             */
             if ( (bp->recvmask & (1LL << k)) != 0 )
                 break;
-            k += rndnodes[(k>>1)]+p; // p is a modifier that increases k by 1, each time it selects a node not in recvmask, because the seed can be 0 it wont change k.
+            // p is a modifier that increases k by 1, each time it selects a node not in recvmask, because the seed can be 0 it wont change k on the next iteration
+            k += rndnodes[(k>>1)]+p; 
             while ( k >= bp->numnotaries ) 
                 k -= bp->numnotaries;
             printf(CYAN">>>>>>> p.%i k.%i vs newk.%i inrecv.%i \n"RESET, p, i, k, ((bp->recvmask & (1LL << k)) != 0));
