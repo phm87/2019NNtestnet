@@ -2241,11 +2241,13 @@ void iguana_main(void *arg)
             int32_t totals[64];
             memset(totals,0,sizeof(totals));
             iguana_notarystats(totals,1);
+	    myinfo->enableTestnetForBitcoin = 0; // if bitcoin is ran, it should be on its mainet
             exit(0);
         }
         else if ( strncmp((char *)arg,"-port=",6) == 0 )
         {
             myinfo->rpcport = atoi(&((char *)arg)[6]);
+	    myinfo->enableTestnetForBitcoin = 0; // if bitcoin is ran, it should be on its mainet
             printf("OVERRIDE IGUANA port <- %u\n",myinfo->rpcport);
         }
         else if ( strncmp((char *)arg,"notary",strlen("notary")) == 0 ) // must be second to last
@@ -2255,6 +2257,7 @@ void iguana_main(void *arg)
             myinfo->nosplit = 1;
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
+	    myinfo->enableTestnetForBitcoin = 0; // if bitcoin is ran, it should be on its mainet
         }
         else
         {
@@ -2267,6 +2270,7 @@ void iguana_main(void *arg)
                 myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
                 elected = (char *)arg;
                 myinfo->nosplit = 1;
+		myinfo->enableTestnetForBitcoin = 1; // if bitcoin is ran on ktnn, it should be on its testnet
 	    }
 	    else	{
 		printf("[phm87] Notary network: 3P main NN\n");
@@ -2276,6 +2280,7 @@ void iguana_main(void *arg)
                 myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
                 elected = (char *)arg;
                 myinfo->nosplit = 1;
+		myinfo->enableTestnetForBitcoin = 0; // if bitcoin is ran, it should be on its mainet (it makes no sense for 3P but code needs to be consistent)
             }
         }
     }
