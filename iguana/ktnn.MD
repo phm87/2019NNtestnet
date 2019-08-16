@@ -1,4 +1,4 @@
-### What is ktnn ?
+# What is ktnn ?
 
 ktnn stands for "Komodo testnet notarization network", it is an unofficial notarization network used for testing purposes. Everyone is allowed to join
 
@@ -7,7 +7,7 @@ https://en.bitcoin.it/wiki/Testnet
 
 As example, an enhancement of BTC coinsplit can be tested on ktnn without operating actual BTC. BTC testnet coins have no financial value
 
-### How to setup ktnn ?
+# How to setup ktnn ?
 
 Source: this "How to setup ktnn ?" is mainly based on https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#_3rd-party-server-setup
 
@@ -53,20 +53,20 @@ Do not send the ktnn pubkey to kolo, send it to phm87 (or do a PR to ktnn branch
 
 ## Setup Iguana
 
-# Clone the jl777/SuperNET -b beta_season3 source
+### Clone the jl777/SuperNET -b beta_season3 source
 ```shell
 cd ~
 git clone https://github.com/phm87/SuperNET/ -b ktnn
 cd SuperNET/iguana
 ```
 
-# Create a pubkey.txt file
+### Create a pubkey.txt file
 You will need to create a pubkey.txt file inside ~/SuperNET/iguana directory. This will be used to start the dPoW process in the dpowassets script later on. pubkey.txt file should contain only the pubkey of the appropriate server. The file should contain only the information in the example below. Change 02a854251adfee222bede8396fed0756985d4ea905f72611740867c7a4ad6488c1 with the appropriate pubkey for the server the file is on.
 ```shell
 pubkey=02a854251adfee222bede8396fed0756985d4ea905f72611740867c7a4ad6488c1
 ```
 
-# Create wp_7787
+### Create wp_7787
 The main server iguana will use the port 7787.
 
 Create wp_7787 file inside the ~/SuperNET/iguana dir with the same passphrase you used to generate your Main address/pubkey. The file should look as follows (replace YOUR VERY SECURE PASSPHRASE with your own):
@@ -74,7 +74,7 @@ Create wp_7787 file inside the ~/SuperNET/iguana dir with the same passphrase yo
 curl --url "http://127.0.0.1:7787" --data "{\"method\":\"walletpassphrase\",\"params\":[\"YOUR VERY SECURE PASSPHRASE\", 9999999]}"
 ```
 
-# Make wp_7787 file executable
+### Make wp_7787 file executable
 ```shell
 chmod 700 wp_7787
 ```
