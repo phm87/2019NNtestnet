@@ -163,7 +163,7 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
     printf("\n"RESET);
     for (j=0; j<bp->numnotaries; j++)
     {
-        jk = ((k=i= DPOW_MODIND(bp,j,freq))>>1);
+        jk = ((k=i= DPOW_MODIND(bp,j,dp->freq))>>1);
         for ( p=0; p<32; p++ )
         {
             if ( (bp->recvmask & (1LL << k)) != 0 && (mask & (1LL << k)) == 0 )
