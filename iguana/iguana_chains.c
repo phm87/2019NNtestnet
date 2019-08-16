@@ -298,8 +298,10 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
     {
         if ( strcmp(chain->symbol,"BTCD") == 0 )
             chain->pubtype = 60, chain->p2shtype = 85, chain->portp2p = 14631, chain->rpcport = 14632;
-        else if ( strcmp(chain->symbol,"BTC") == 0 )
+        else if ( strcmp(chain->symbol,"BTC") == 0 && myinfo->enableTestnetForBitcoin == 0)
             chain->pubtype = 0, chain->p2shtype = 5, chain->portp2p = 8333, chain->rpcport = 8332;
+        else if ( strcmp(chain->symbol,"BTC") == 0 && myinfo->enableTestnetForBitcoin == 1) // ktnn
+            chain->pubtype = 0, chain->p2shtype = 5, chain->portp2p = 18333, chain->rpcport = 18332;
         else chain->do_opreturn = juint(argjson,"do_opreturn");
         if ( (chain->minoutput= j64bits(argjson,"minoutput")) == 0 )
             chain->minoutput = 10000;
@@ -336,19 +338,29 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             if ( chain->portp2p != 0 )
                 chain->rpcport = chain->portp2p-1;
         }
-        if ( chain->portp2p == 0 )
+        if ( chain->portp2p == 0  && myinfo->enableTestnetForBitcoin == 0 )
         {
             if ( strcmp("BTC",chain->symbol) == 0 )
                 chain->portp2p = 8333;
             else if ( strcmp("BTCD",chain->symbol) == 0 )
                 chain->portp2p = 14631;
         }
-        if ( chain->rpcport == 0 )
+	if ( chain->portp2p == 0  && myinfo->enableTestnetForBitcoin == 1 )
+	{
+            if ( strcmp("BTC",chain->symbol) == 0 )
+                chain->portp2p = 18333;
+	}
+        if ( chain->rpcport == 0  && myinfo->enableTestnetForBitcoin == 0 )
         {
             if ( strcmp("BTC",chain->symbol) == 0 )
                 chain->rpcport = 8332;
             else if ( strcmp("BTCD",chain->symbol) == 0 )
                 chain->rpcport = 14632;
+        }
+        if ( chain->rpcport == 0  && myinfo->enableTestnetForBitcoin == 1 )
+        {
+            if ( strcmp("BTC",chain->symbol) == 0 )
+                chain->rpcport = 18332;
         }
         chain->zcash = juint(argjson,"zcash");
         if ( chain->havecltv == 0 )
