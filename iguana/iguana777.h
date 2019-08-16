@@ -165,6 +165,7 @@ struct supernet_info
     struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ,p2pQ;
     void *ctx;
     uint8_t *pingbuf;
+    uint8_t enableTestnetForBitcoin;
     struct basilisk_request DEXaccept;
     FILE *dexfp;
     struct dpow_info *DPOWS[8192]; int32_t numdpows,dpowsock,dexsock,pubsock,repsock,subsock,reqsock;
