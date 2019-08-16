@@ -65,11 +65,11 @@ int8_t is_STAKED(const char *chain_name)
     if ( chain_name[0] == 0 )
         return(0);
     if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) )
-        ret = 1; // These chains are allowed coin emissions.
+        ret = 3; // These chains are allowed coin emissions.
     else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
         ret = 2; // These chains have no speical rules at all.
     else if ( (strcmp(chain_name, "TEST") == 0) || (strncmp(chain_name, "TEST", 4) == 0) )
-        ret = 3; // These chains are for testing consensus to create a chain etc. Not meant to be actually used for anything important.
+        ret = 1; // These chains are for testing consensus to create a chain etc. Not meant to be actually used for anything important.
     return(ret);
 };
 #endif
@@ -85,13 +85,10 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     {
         // Nodes who join do not get sent the prevKMD height so they all have diffrent numbers based on when they started dpow.
         // mitigated somewhat by saving the KMD height when a round is triggered to start and then updating the prevDESTHEIGHT, when it successfully completes. 
-        int supressfreq = DPOW_CHECKPOINTFREQ;
+        int supressfreq;
 #if STAKED
-        if ( is_STAKED(dp->symbol) != 0 )
-        {
-            dp->minsigs = Notaries_minsigs;
-            supressfreq = 3;
-        }
+        if ( (supressfreq= (is_STAKED(dp->symbol))) == 0 )
+            supressfreq = DPOW_CHECKPOINTFREQ;
 #endif
         if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
