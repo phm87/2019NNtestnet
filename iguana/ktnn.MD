@@ -17,8 +17,10 @@ http://bootstrap3rd.dexstats.info/
 - KMD Bootstrap:
 https://dexstats.info/bootstrap.php
 
-- Bitcoin testnet bootstrap:
-TODO
+- tBTC faucet:
+https://coinfaucet.eu/en/btc-testnet/
+https://testnet-faucet.mempool.co/
+
 
 ## Warning
 Please read the source if you are not familiar with Notary Nodes operations
