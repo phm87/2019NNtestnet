@@ -2257,6 +2257,10 @@ void iguana_main(void *arg)
         }
         else
         {
+            printf("[phm87] arg is %s\n",&((char *)arg));
+            if ( strncmp((char *)arg,"ktnn",4) == 0 )	{
+	        printf("[phm87] KTNN acivated !\n");
+	    }
             // this means that an elected file was specified for 3rd party network, so use diffrent RPC port. 
             myinfo->rpcport = IGUANA_NOTARYPORT2;
             myinfo->IAMNOTARY = 1;
