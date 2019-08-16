@@ -11,6 +11,15 @@ As example, an enhancement of BTC coinsplit can be tested on ktnn without operat
 
 Source: this "How to setup ktnn ?" is mainly based on https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#_3rd-party-server-setup
 
+- CHIPS & VRSC Bootstraps:
+http://bootstrap3rd.dexstats.info/
+
+- KMD Bootstrap:
+https://dexstats.info/bootstrap.php
+
+- Bitcoin testnet bootstrap:
+TODO
+
 ## Warning
 Please read the source if you are not familiar with Notary Nodes operations
 
