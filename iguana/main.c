@@ -2250,7 +2250,7 @@ void iguana_main(void *arg)
         }
         else if ( strncmp((char *)arg,"notary",strlen("notary")) == 0 ) // must be second to last
         {
-	    printf("[phm87] Main NN\n");
+	    printf("[phm87] Notary network: Main NN\n");
             myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->nosplit = 1;
             myinfo->IAMNOTARY = 1;
@@ -2260,7 +2260,7 @@ void iguana_main(void *arg)
         {
             // printf("[phm87] arg is %s\n",arg);
             if ( strncmp((char *)arg,"ktnn",4) == 0 )	{
-	        printf("[phm87] KTNN !\n");
+	        printf("[phm87] Notary network: KTNN\n");
                 // this means that an elected file was specified for ktnn network, so use diffrent RPC port. 
                 myinfo->rpcport = IGUANA_NOTARYPORT3; // Port is different for each iguana
                 myinfo->IAMNOTARY = 1;
@@ -2269,7 +2269,7 @@ void iguana_main(void *arg)
                 myinfo->nosplit = 1;
 	    }
 	    else	{
-		printf("[phm87] 3P main NN\n");
+		printf("[phm87] Notary network: 3P main NN\n");
                 // this means that an elected file was specified for 3rd party network, so use diffrent RPC port. 
                 myinfo->rpcport = IGUANA_NOTARYPORT2;
                 myinfo->IAMNOTARY = 1;
