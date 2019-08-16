@@ -161,6 +161,7 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
         printf("%i ", rndnodes[i]);
     }
     printf("\n"RESET);
+    z = -1;
     for (j=0; j<bp->numnotaries; j++)
     {
         jk = ((k=i= DPOW_MODIND(bp,j,dp->freq))>>1);
@@ -181,12 +182,13 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
         {
             *lastkp = i;
             bestmask = mask;
+            z = k;
         }
     }
     if ( *lastkp >= 0 )
     {
-        char str[64]; sprintf(str,CYAN" -> newk.%i"RESET, k); 
-        printf(GREEN"[%s:%i] nodes.%i vs min.%i bestk.%i %s\n", bp->srccoin->symbol, bp->height, n, bp->minnodes, i, (k == i) ? RESET : str );
+        char str[64]; sprintf(str,CYAN"-> newk.%i"RESET, z); 
+        printf(GREEN"[%s:%i] nodes.%i vs min.%i bestk.%i %s\n", bp->srccoin->symbol, bp->height, bitweight(bp->recvmask), bp->minnodes, *lastkp, (*lastkp == z) ? RESET : str );
         for (mask=j=0; j<bp->numnotaries; j++)
         {
             if ( bp->notaries[j].src.siglens[*lastkp] > 0 )
