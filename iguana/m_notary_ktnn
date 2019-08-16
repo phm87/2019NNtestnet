@@ -3,7 +3,7 @@
 # unlock any locked utxos. This will unlock utxos for both pubkeys, need a filter for address to only unlock the pubkey you need to restart. 
 komodo-cli lockunspent true `komodo-cli listlockunspent | jq -c .` 
 
-# Start ktnn iguana, no split is default on this branch. This uses RPC port 7779, allows 2 iguana on same OS, incase OP does not have capacity to use 2 VM or 2 servers. 
+# Start ktnn iguana, no split is default on this branch. This uses RPC port 7787, allows 2 iguana on same OS, incase OP does not have capacity to use 2 VM or 2 servers. 
 stdbuf -oL $1 ../agents/iguana ktnn & #> iguana.log 2> error.log  &
 
 myip=`curl -s4 checkip.amazonaws.com`
