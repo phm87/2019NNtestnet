@@ -179,6 +179,7 @@ https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#execute-the
 https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#start-iguana
 ```shell
 cd ~/SuperNET/iguana
+./m_notary_build
 ./m_notary_ktnn
 ```
 
