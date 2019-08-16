@@ -45,6 +45,11 @@ Please execute the steps in https://docs.komodoplatform.com/notary/setup-Komodo-
 
 Please generate one pubkey, address & WIF's as described in https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#install-komodo-by-compiling-it-from-source
 
+Use phm87's fork instead of Decker's original code, testnet BTC use different addresses:
+```shell
+https://github.com/phm87/komodo_scripts -b patch-3
+```
+
 Do not send the ktnn pubkey to kolo, send it to phm87 (or do a PR to ktnn branch of iguana)
 
 ## Setup Iguana
