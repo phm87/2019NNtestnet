@@ -2,7 +2,7 @@
 
 ktnn stands for "Komodo testnet notarization network", it is an unofficial notarization network used for testing purposes. Everyone is allowed to join
 
-The first purpose of ktnn is to allow NN operators to test changes without testing the changes on a production notarization network. BTC testnet, CHIPS and VRSC will be notarized with KMD but other coins can be added/removed/changed later
+The first purpose of ktnn is to allow NN operators to test changes without testing the changes on a production notarization network. BTC testnet will be notarized with KMD but other coins and smartchains can be added/changed later
 https://en.bitcoin.it/wiki/Testnet
 
 As example, an enhancement of BTC coinsplit can be tested on ktnn without operating actual BTC. BTC testnet coins have no financial value
@@ -10,9 +10,6 @@ As example, an enhancement of BTC coinsplit can be tested on ktnn without operat
 ### How to setup ktnn ?
 
 Source: this "How to setup ktnn ?" is mainly based on https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#_3rd-party-server-setup
-
-- CHIPS & VRSC Bootstraps:
-http://bootstrap3rd.dexstats.info/
 
 - KMD Bootstrap:
 https://dexstats.info/bootstrap.php
@@ -99,28 +96,19 @@ rpcbind=127.0.0.1
 rpcallowip=127.0.0.1
 ```
 
-## Install CHIPS
-
-https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#chips
-
-
-## Install VRSC
-
-https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#veruscoin-vrsc
-
 
 ## Start the daemons and sync all the chains
 
 ```shell
 komodod &
 bitcoind &
-chipsd &
-verusd &
 ```
 Please read the following link for more details: https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#start-the-daemons-and-sync-all-the-chains
 
 
 ## Import private key into KMD, BTC, 3P coins and assetcahins
+
+Please use the tBTC keys instead of BTC (mainet) keys.
 
 https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#import-your-main-private-key
 https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#import-3rd-party-private-key
@@ -140,8 +128,6 @@ https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#copy-the-pu
 ```shell
 komodo-cli stop &
 bitcoin-cli stop &
-chips-cli stop &
-komodo-cli -ac_name=VRSC stop
 ```
 https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#stop-all-the-coin-daemons-safely
 
@@ -173,8 +159,7 @@ https://docs.komodoplatform.com/notary/setup-Komodo-Notary-Node.html#create-a-st
 ```shell
 #!/bin/bash
 source ~/komodo/src/pubkey.txt
-chipsd -pubkey=$pubkey &
-~/VerusCoin/src/verusd -pubkey=$pubkey &
+bitcoind &
 sleep 60
 cd komodo/src
 ./komodod -pubkey=$pubkey &
