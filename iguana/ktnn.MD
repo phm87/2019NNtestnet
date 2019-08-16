@@ -162,7 +162,7 @@ source ~/komodo/src/pubkey.txt
 bitcoind &
 sleep 60
 cd komodo/src
-./komodod -pubkey=$pubkey &
+./komodod -notary -pubkey=$pubkey &
 ```
 Make the file executable:
 ```shell
