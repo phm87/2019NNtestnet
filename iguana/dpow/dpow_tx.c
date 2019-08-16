@@ -133,8 +133,7 @@ uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 
 uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t j,m,k,z,n,i,p; uint64_t bestmask,mask = 0;//bp->require0;
-    bestmask = 0;
+    int32_t j,m,k,z,n,i,p,jk; uint64_t bestmask = 0,mask = 0;
     *lastkp = -1;
     m = 0;
     /* 
@@ -142,6 +141,9 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
         This keeps the network in consensus. 
         Notarizations are more reliable and better distributed amoung all nodes who are in a working state, rather than 
         the first 13 nodes who see a bestk that is valid in their recvmask. 
+        nodes can only get into recvmask if they have utxos submitted. This happens in dpow_notarize_update before this function is called.
+        //bp->recvmask |= mask;
+        //if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 && bp->paxwdcrc == bp->notaries[k].paxwdcrc )
     */
     for (z=n=0; z<bp->numnotaries; z++)
         if ( bitweight(bp->notaries[z].recvmask) >= bp->minnodes )
@@ -154,57 +156,37 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
     printf(BLUE"Random seed: ");
     for ( i=0; i<32; i++ )
     {
-        rndnodes[i] = dp->prevnotatxid.bytes[i] % bp->numnotaries;
+        // 32 rnd numbers from 1 -> numnotaries-1. 
+        rndnodes[i] = (dp->prevnotatxid.bytes[i] % (bp->numnotaries-1))+1;
         printf("%i ", rndnodes[i]);
     }
     printf("\n"RESET);
     for (j=0; j<bp->numnotaries; j++)
     {
-        k = i = DPOW_MODIND(bp,j,dp->freq);
-        for ( p=0; p<32; p++ ) 
+        jk = ((k=i= DPOW_MODIND(bp,j,freq))>>1);
+        for ( p=0; p<32; p++ )
         {
-            /* 
-            If our k value that is a node not in recvmask we need to choose another k value. 
-             Otherise it will just use k+1 and simply give the next node inline 2 bestks in a row, 
-             this gives a disadvantage to nodes who reside in the same k group as a node who is down. 
-            maybe we can base ht value in DPOW_MODIND off something other than block height, because it does not rotate cleanly though the 
-            bestks if one height is not notarized because it was wating on a KMD block due to the suppress logic.
-            We may need to change the suppress logic as it causes all kinds of undefined beheaviour until all nodes agree on it. if a node is lagging
-                by just one KMD block, it will not start dpow round at the same time as other nodes, I mitigated this somewhat by having all nodes start a round 
-                at the elegible ht until they see a completed notarization, and then update the kmdheight last used. Seems to get all nodes in consensus afer 2-3 rounds,
-                the kmdheight is a local value though and not agreed on in the consenus so nodes who can actually notarize may not try to. 
-            Suppress is mostly a problem when starting a network or having a lot of nodes join an existing network at the same time. 
-            
-            The below algo gets very close to good distrubution after a few days worth of notarizaions, likey can be improved more though. 
-            using the random seed, we could randomise the k value, rather than having it based off block height. 
-            would work by looping forwards from this value simply adding nodes in recvmask until it gets to minsigs. 
-               use seed[0] to create k value, check its in recvmask, if not, use the next number in the seed and try again. 
-               then to choose bestmask, start at k, and loop forwards to numnodes-1. If dont get to minsigs, start back at node[0]. 
-               of course we need to model this algo against the current one to see if it would be worth the time to change it. 
-            */
-            if ( (bp->recvmask & (1LL << k)) != 0 )
+            if ( (bp->recvmask & (1LL << k)) != 0 && (mask & (1LL << k)) == 0 )
                 break;
-            // p is a modifier that increases k by 1, each time it selects a node not in recvmask, because the seed can be 0 it wont change k on the next iteration
-            k += rndnodes[(k>>1)]+p; 
+            jk = ((jk >= 32) ? 0 : jk+1);
+            k += rndnodes[jk];
             while ( k >= bp->numnotaries ) 
                 k -= bp->numnotaries;
-            printf(CYAN">>>>>>> p.%i k.%i vs newk.%i inrecv.%i \n"RESET, p, i, k, ((bp->recvmask & (1LL << k)) != 0));
         }
-        if ( (mask & (1LL << k)) == 0 && bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 && bp->paxwdcrc == bp->notaries[k].paxwdcrc )
+        if ( p == 32 ) 
+            continue;
+        // got this far we have a valid k
+        mask |= (1LL << k);
+        if ( ++m == bp->minsigs )
         {
-            mask |= (1LL << k);
-            if ( ++m == bp->minsigs )
-            {
-                *lastkp = k;
-                bestmask = mask;
-                char str[128]; sprintf(str,CYAN" -> newbestk.%i"RESET, k); 
-                printf(GREEN"[%s] ht.%i %llx minnodes.%i vs nodes.%i bestk.%i %s\n"RESET,bp->srccoin->symbol,bp->height,(long long)bestmask, bp->minnodes, n, i, (k == i) ? " " : str );
-            }
+            *lastkp = i;
+            bestmask = mask;
         }
     }
-    bp->recvmask |= mask;
     if ( *lastkp >= 0 )
     {
+        char str[64]; sprintf(str,CYAN" -> newk.%i"RESET, k); 
+        printf(GREEN"[%s:%i] nodes.%i vs min.%i bestk.%i %s\n", bp->srccoin->symbol, bp->height, n, bp->minnodes, i, (k == i) ? RESET : str );
         for (mask=j=0; j<bp->numnotaries; j++)
         {
             if ( bp->notaries[j].src.siglens[*lastkp] > 0 )
@@ -218,7 +200,7 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
         }
         bp->destsigsmasks[*lastkp] |= mask;
    }
-    return(bestmask);
+   return(bestmask);
 }
 
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height)
