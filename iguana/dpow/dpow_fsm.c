@@ -576,7 +576,7 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
         {
-            printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+            //printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
             goto end;
         }
@@ -618,8 +618,9 @@ void dpow_statemachinestart(void *ptr)
         {
             if ( bp->isratify == 0 )
             {
-                printf(YELLOW"abort %s ht.%d due to new checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
-                break;
+                //printf(YELLOW"abort %s ht.%d due to new checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                //break;
+                printf(MAGENTA"DO NOT--->>>> abort %s ht.%d due to new checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             }
         }
         if ( dp->ratifying > 1 )
