@@ -391,6 +391,9 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         else chain->initialreward = 50 * SATOSHIDEN;
         if ( chain->serverport[0] == 0 )
             sprintf(chain->serverport,"127.0.0.1:%u",chain->rpcport);
+	if ( strcmp(chain->symbol,"BTC") == 0 && myinfo->enableTestnetForBitcoin == 1) // ktnn
+            chain->wiftype = 111;
+
         if ( strcmp(chain->symbol,"BTC") != 0 && strcmp(chain->symbol,"BTCD") != 0 )
         {
             chain->pubtype = juint(argjson,"pubval");
