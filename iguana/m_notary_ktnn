@@ -24,11 +24,11 @@ curl --url "http://127.0.0.1:7787" --data "{\"conf\":\"komodo.conf\",\"path\":\"
 # unlock wallet
 ./wp_7787
 
-# add 3rd party coins to iguana
-coins/chips_7787
-coins/vrsc_7787
+# add smartchains and 3rd party coins to iguana
+#coins/chips_7787
+#coins/vrsc_7787
 
-# add KMD : TODO: check that it is not identical to m_notary_ktnn line 29 or 32
+# add KMD
 coins/kmd_7787
 
 # external coins.
@@ -40,9 +40,9 @@ sleep 30
 source pubkey.txt
 echo $pubkey
 sleep 3
-curl --url "http://127.0.0.1:7787" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"CHIPS\",\"pubkey\":\"$pubkey\"}"
-curl --url "http://127.0.0.1:7787" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"VRSC\",\"freq\":10,\"pubkey\":\"$pubkey\"}"
+#curl --url "http://127.0.0.1:7787" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"CHIPS\",\"pubkey\":\"$pubkey\"}"
+#curl --url "http://127.0.0.1:7787" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"VRSC\",\"freq\":10,\"pubkey\":\"$pubkey\"}"
 
-sleep 30
+#sleep 30
 # dpow for KMD-> BTC testnet.
 curl --url "http://127.0.0.1:7787" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"
