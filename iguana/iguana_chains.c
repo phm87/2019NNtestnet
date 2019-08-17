@@ -302,6 +302,8 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             chain->pubtype = 0, chain->p2shtype = 5, chain->portp2p = 8333, chain->rpcport = 8332;
         else if ( strcmp(chain->symbol,"BTC") == 0 && myinfo->enableTestnetForBitcoin == 1) // ktnn
             chain->pubtype = 111, chain->p2shtype = 239, chain->portp2p = 18333, chain->rpcport = 18332;
+        else if ( strcmp(chain->symbol,"tBTC") == 0 && myinfo->enableTestnetForBitcoin == 1) // tktnn
+            chain->pubtype = 111, chain->p2shtype = 239, chain->portp2p = 18333, chain->rpcport = 18332;
         else chain->do_opreturn = juint(argjson,"do_opreturn");
         if ( (chain->minoutput= j64bits(argjson,"minoutput")) == 0 )
             chain->minoutput = 10000;
@@ -347,7 +349,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         }
 	if ( chain->portp2p == 0  && myinfo->enableTestnetForBitcoin == 1 )
 	{
-            if ( strcmp("BTC",chain->symbol) == 0 )
+            if ( strcmp("BTC",chain->symbol) == 0 || strcmp("tBTC",chain->symbol) == 0 )
                 chain->portp2p = 18333;
 	}
         if ( chain->rpcport == 0  && myinfo->enableTestnetForBitcoin == 0 )
@@ -359,7 +361,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         }
         if ( chain->rpcport == 0  && myinfo->enableTestnetForBitcoin == 1 )
         {
-            if ( strcmp("BTC",chain->symbol) == 0 )
+            if ( strcmp("BTC",chain->symbol) == 0 || strcmp("tBTC",chain->symbol) == 0 )
                 chain->rpcport = 18332;
         }
         chain->zcash = juint(argjson,"zcash");
@@ -392,6 +394,8 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         if ( chain->serverport[0] == 0 )
             sprintf(chain->serverport,"127.0.0.1:%u",chain->rpcport);
 	if ( strcmp(chain->symbol,"BTC") == 0 && myinfo->enableTestnetForBitcoin == 1) // ktnn
+            chain->wiftype = 111;
+	if ( strcmp(chain->symbol,"tBTC") == 0 && myinfo->enableTestnetForBitcoin == 1) // tktnn
             chain->wiftype = 111;
 
         if ( strcmp(chain->symbol,"BTC") != 0 && strcmp(chain->symbol,"BTCD") != 0 )
