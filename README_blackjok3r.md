@@ -4,8 +4,8 @@ We seem to have a problem currently where notarizations are being distributed am
 
 Some common used terms that you need to know: 
 - recvmask : This is a bitwise mask, that can have either 1 or 0 for each of the 64 nodes. To enter it (1), you must send utxos to every node, who will then include you in their recvmask otherwise its (0) for your node. 
-- bestk : This is a rotating number based on block height that determines the first node elegible for a notarization, eg, bestk of 0, means node 0-(numnotaries-13) are chosen to notarize. 
-- bestmask: This is the nodes actually chosen to notarize. 
+- bestk : This is a rotating number based on block height that determines the last node elegible for a notarization. eg bestk = 0, numnotaries = 64, minsigs = 13, nodes 52,53,54,55,56,57,58,59,60,61,62,63,0 are chosen to notarize. 
+- bestmask: This is the nodes actually chosen to notarize. eg bestk = 0, numnotaries = 64, minsigs = 13, nodes not in recvmask = 54,60, nodes 52,53,55,56,57,58,59,61,62,63,0,1,2 are chosen to notarize. 
 
 ## How dPoW works currently:
 
