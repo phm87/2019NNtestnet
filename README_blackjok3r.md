@@ -146,6 +146,41 @@ We can see that this is not a perfect +1 all the way, but gaps happen because an
 
 This finally allows the bestk to rotate as normal, but any node who may happen to be offline inside the chosen bestk, will simply be substituted with a node in recvmask. No longer will an offline node cause an entire bestk group to be skipped, giving a disadvantage to other online nodes in this bestk group.
 
+Example 1 : Old
+```
+numnotaries = 64, 
+minsigs = 13
+bestk = 0: 52,53,54,55,56,57,58,59,60,61,62,63,0 are chosen to notarize. 
+nodes not in recvmask = 54,60
+bestmask: 52,53,55,56,57,58,59,61,62,63,0,1,2 are chosen to notarize. 
+```
+New: 
+```
+numnotaries = 64, 
+minsigs = 13
+bestk = 0: 52,53,54,55,56,57,58,59,60,61,62,63,0 are chosen to notarize. 
+nodes not in recvmask = 54,60
+bestmask: 52,53,10,55,56,57,58,59,7,61,62,63,0 are chosen to notarize. 
+```
+
+Example 2 : Old
+```
+numnotaries = 64, 
+minsigs = 13
+bestk = 3: 55,56,57,58,59,60,61,62,63,0,1,2,3 are chosen to notarize. 
+nodes not in recvmask = 3, 25
+3 offline so new bestk = 4
+bestmask: 55,56,57,58,59,61,62,63,0,1,2,4 are chosen to notarize. 
+```
+New: 
+```
+numnotaries = 64, 
+minsigs = 13
+bestk = 3: 55,56,57,58,59,60,61,62,63,0,1,2,3 are chosen to notarize. 
+nodes not in recvmask = 3, 25
+bestmask: 55,56,57,58,59,60,61,62,63,0,1,2,28 are chosen to notarize. 
+```
+
 I hope this made sense, and welcome any suggestions to improve it! 
 
 ### UTXO Cache
