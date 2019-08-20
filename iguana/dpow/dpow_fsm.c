@@ -570,8 +570,8 @@ void dpow_statemachinestart(void *ptr)
     bp->hashmsg = checkpoint.blockhash.hash;
     bp->myind = myind;
     bp->minnodes = bitweight(dp->lastrecvmask)-1; // use one less than the maximum possible, seems to work, as after 30s it drops by 1/8th and then all nodes are already well above the new mim. 
-    if ( bp->minnodes < bp->minsigs*2)
-        bp->minnodes = bp->minsigs*2;
+    if ( bp->minnodes < bp->minsigs)
+        bp->minnodes = bp->minsigs;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
