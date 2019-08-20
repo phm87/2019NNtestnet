@@ -510,7 +510,7 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( bp->srccoin->notarypay != 0 && dpow_checknotarization(myinfo, bp->srccoin) == 0)
         {
-            printf("[%s] notary pay fund is empty, need to send coins to: REDVp3ox1pbcWYCzySadfHhk8UU3HM4k5x\n", bp->srccoin->symbol);
+            printf(RED"[%s] notary pay fund is empty, need to send coins to: REDVp3ox1pbcWYCzySadfHhk8UU3HM4k5x\n"RESET, bp->srccoin->symbol);
             portable_mutex_lock(&dpowT_mutex);
             dp->blocks[blockindex] = 0;
             bp->state = 0xffffffff;
@@ -618,9 +618,8 @@ void dpow_statemachinestart(void *ptr)
         {
             if ( bp->isratify == 0 )
             {
-                //printf(YELLOW"abort %s ht.%d due to new checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
-                //break;
-                printf(MAGENTA"DO NOT--->>>> abort %s ht.%d due to new checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                printf(YELLOW"abort %s ht.%d due to new checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                break;
             }
         }
         if ( dp->ratifying > 1 )
