@@ -2199,6 +2199,7 @@ void komodo_REVS_merge(char *str,char *str2)
 }
 
 int32_t komodo_initjson(char *fname);
+extern uint16_t Notaries_RPCport;
 
 void iguana_main(void *arg)
 {
@@ -2262,8 +2263,8 @@ void iguana_main(void *arg)
         }
         else
         {
-            // this means that an elected file was specified for 3rd party network, so use diffrent RPC port. 
-            myinfo->rpcport = IGUANA_NOTARYPORT;
+            // Set RPC port via JSON. 
+            //myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
             elected = (char *)arg;
@@ -2274,6 +2275,10 @@ void iguana_main(void *arg)
     {
         printf("didnt find any elected notaries JSON in (%s)\n",elected);
         exit(-1);
+    }
+    else 
+    {
+        myinfo->rpcport = Notaries_RPCport;
     }
     dex_init(myinfo);
 #ifdef IGUANA_OSTESTS
