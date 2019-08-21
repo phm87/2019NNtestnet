@@ -610,7 +610,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
-	if ( strcmp(coin->symbol,"BTC") == 0 )
+	if ( strcmp(coin->symbol,"CHIPS") != 0 || strcmp(coin->symbol,"GAME") != 0 || strcmp(coin->symbol,"EMC2") != 0 || strcmp(coin->symbol,"VRSC") != 0  || strcmp(coin->symbol,"GIN") != 0 )
 		sprintf(call,"dpowlistunspent");
 	else
 		sprintf(call,"listunspent");
