@@ -609,8 +609,12 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     if ( coin->active == 0 ) return (0);
     if ( coin->FULLNODE < 0 )
     {
-	if ( strcmp(coin->symbol,"BTC") == 0 || strcmp(coin->symbol,"KMD") == 0 )	{
+	if ( strcmp(coin->symbol,"KMD") == 0 )	{
             sprintf(buf,"10000, \"%s\"",coinaddr);
+	    sprintf(call,"dpowlistunspent");
+	}
+	else if ( strcmp(coin->symbol,"BTC") == 0 )	{
+            sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
 	    sprintf(call,"dpowlistunspent");
 	}
 	else	{
