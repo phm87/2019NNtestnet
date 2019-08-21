@@ -610,22 +610,21 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
 
 cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t dpow)
 {
-    char buf[128],*retstr; cJSON *array,*json = 0;
+    char buf[128], buf2[128],*retstr; cJSON *array,*json = 0;
     if ( coin->FULLNODE < 0 )
     {
         if ( coinaddr == 0 )
             sprintf(buf,"");
         else if ( dpow == 1 )
             sprintf(buf,"%i %s",DPOW_UTXOSIZ, coinaddr);
-        else
-            sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
+        sprintf(buf2,"1, 99999999, [\"%s\"]",coinaddr);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass, dpow == 1 ? "dpowlistunspent" : "listunspent", buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
             //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
             free(retstr);
         } 
-        else if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
+        else if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf2)) != 0 )
         {
             json = cJSON_Parse(retstr);
             //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
