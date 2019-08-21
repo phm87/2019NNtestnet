@@ -2035,8 +2035,7 @@ uint64_t iguana_fastnotariescount(struct supernet_info *myinfo, struct dpow_info
             sighash = iguana_sapling_sighash(myinfo,&tx,vini,10000,script,35);
             if ( bitcoin_verify(myinfo->ctx, vin->vinscript+1, vin->scriptlen-2, sighash, (uint8_t*)bp->notaries[j].pubkey, 33) == 0 )
             {
-                if ( j != 5 )
-                    mask |= (1LL << j);
+                mask |= (1LL << j);
                 //fprintf(stderr,"vini.%i bestmask.%llx node.%i\n",vini,(long long)mask, j);
                 break;
             }
