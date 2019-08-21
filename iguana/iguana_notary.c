@@ -987,7 +987,7 @@ STRING_ARG(dpow,active,maskhex)
     {
         if ( myinfo->DPOWS[0] == 0 || myinfo->DPOWS[0]->currentbp == 0 )
             return(clonestr("{\"error\":\"there is no dpow round yet started to check.\"}"));
-        return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[0],myinfo->DPOWS[0]->currentbp),1));
+        return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[0]->currentbp),1));
 
         /*mask = myinfo->DPOWS[0]->lastrecvmask;
         for (i=0; i<n; i++)
