@@ -959,7 +959,7 @@ cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     int32_t i; cJSON *retjson,*item; char hexstr[64];
     retjson = cJSON_CreateArray();
     if ( dp == 0 || bp == 0 )
-        return(retjson);
+        return(clonestr("{\"error\":\"there is no dpow round yet started to check.\"}"));
     for (i=0; i<bp->numnotaries; i++)
     {
         item = cJSON_CreateObject();
@@ -985,8 +985,6 @@ STRING_ARG(dpow,active,maskhex)
         free_json(infojson);
     } else return(clonestr("{\"error\":\"cant get current height\"}"));
     n = komodo_notaries("KMD",pubkeys,current);
-    if ( myinfo->DPOWS[0]->currentbp == 0 )
-        return(clonestr("{\"error\":\"there is no dpow round yet started to check.\"}"));
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[0],myinfo->DPOWS[0]->currentbp),1));
