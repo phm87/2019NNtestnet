@@ -616,7 +616,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
         if ( coinaddr == 0 )
             sprintf(buf,"");
         else if ( utxosize != 0 )
-            sprintf(buf,"%i, %s", utxosize, coinaddr);
+            sprintf(buf,"%i, \"%s\"", utxosize, coinaddr);
         sprintf(buf2,"1, 99999999, [\"%s\"]",coinaddr);
         
         fprintf(stderr, "buf.%s buf2.%s\n",buf, buf2);
