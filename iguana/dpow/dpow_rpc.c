@@ -616,7 +616,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
         if ( coinaddr == 0 )
             sprintf(buf,"");
         else if ( dpow == 1 )
-            sprintf(buf,"%i %s",DPOW_UTXOSIZE, coinaddr);
+            sprintf(buf,"%lu %s",DPOW_UTXOSIZE, coinaddr);
         sprintf(buf2,"1, 99999999, [\"%s\"]",coinaddr);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass, dpow == 1 ? "dpowlistunspent" : "listunspent", buf)) != 0 )
         {
