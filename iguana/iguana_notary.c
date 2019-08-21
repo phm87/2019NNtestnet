@@ -977,18 +977,18 @@ STRING_ARG(dpow,active,maskhex)
     uint8_t data[8],revdata[8],pubkeys[64][33]; int32_t i,len,current,n; uint64_t mask; cJSON *infojson,*retjson,*array,*notarray;
     array = cJSON_CreateArray();
     notarray = cJSON_CreateArray();
-    if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
+    /*if ( coin != 0 && (infojson= dpow_getinfo(myinfo,coin)) != 0 )
     {
         current = jint(infojson,"blocks");
         free_json(infojson);
     } else return(clonestr("{\"error\":\"cant get current height\"}"));
-    n = komodo_notaries("KMD",pubkeys,current);
+    n = komodo_notaries("KMD",pubkeys,current); */
     if ( myinfo->DPOWS[0] == 0 )
         return(clonestr("{\"error\":\"there is no active dpow coins.\"}"));
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         if ( myinfo->DPOWS[0]->currentbp == 0 )
-            return(clonestr("{\"error\":\"there is no dpow round yet started to check.\"}"));
+            return(clonestr("{\"error\":\"there is no dpow round started to check.\"}"));
         return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[0]->currentbp),1));
 
         /*mask = myinfo->DPOWS[0]->lastrecvmask;
@@ -1022,7 +1022,7 @@ STRING_ARG(dpow,active,maskhex)
         for (i=0; i<(len<<3); i++)
         {
             if ( i == Notaries_num )
-                break;            
+                break;
             if ( ((1LL << i) & mask) != 0 )
             {
                 //init_hexbytes_noT(pubkeystr,pubkeys[i],33);
