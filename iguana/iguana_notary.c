@@ -1019,6 +1019,8 @@ STRING_ARG(dpow,active,maskhex)
         //printf(" <- hex mask.%llx\n",(long long)mask);
         for (i=0; i<(len<<3); i++)
         {
+            if ( i == Notaries_num )
+                break;            
             if ( ((1LL << i) & mask) != 0 )
             {
                 //init_hexbytes_noT(pubkeystr,pubkeys[i],33);
