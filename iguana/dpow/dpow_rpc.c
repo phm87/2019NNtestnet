@@ -614,7 +614,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
 		sprintf(call,"dpowlistunspent");
 	else
 		sprintf(call,"listunspent");
-        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,call,buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
             //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
