@@ -983,9 +983,11 @@ STRING_ARG(dpow,active,maskhex)
         free_json(infojson);
     } else return(clonestr("{\"error\":\"cant get current height\"}"));
     n = komodo_notaries("KMD",pubkeys,current);
+    if ( myinfo->DPOWS[0] == 0 )
+        return(clonestr("{\"error\":\"there is no active dpow coins.\"}"));
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
-        if ( myinfo->DPOWS[0] == 0 && myinfo->DPOWS[0]->currentbp == 0 )
+        if ( myinfo->DPOWS[0]->currentbp == 0 )
             return(clonestr("{\"error\":\"there is no dpow round yet started to check.\"}"));
         return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[0]->currentbp),1));
 
