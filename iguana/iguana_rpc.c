@@ -477,6 +477,11 @@ static char *listunspent(RPCARGS)
     return(sglue3(0,CALLGLUE,"bitcoinrpc","listunspent","minconf",params[0],"maxconf",params[1],"array",params[2]));
 }
 
+static char *dpowlistunspent(RPCARGS)
+{
+    return(sglue3(0,CALLGLUE,"bitcoinrpc","dpowlistunspent","minconf",params[0],"maxconf",params[1],"array",params[2]));
+}
+
 static char *lockunspent(RPCARGS)
 {
     return(sglue2(0,CALLGLUE,"bitcoinrpc","lockunspent","flag",params[0],"array",params[1]));
