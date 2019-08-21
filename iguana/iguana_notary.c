@@ -954,12 +954,10 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
 
 extern char *Notaries_elected[65][2];
 
-cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp)
+cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_block *bp)
 {
     int32_t i; cJSON *retjson,*item; char hexstr[64];
     retjson = cJSON_CreateArray();
-    if ( dp == 0 || bp == 0 )
-        return(clonestr("{\"error\":\"there is no dpow round yet started to check.\"}"));
     for (i=0; i<bp->numnotaries; i++)
     {
         item = cJSON_CreateObject();
@@ -987,6 +985,8 @@ STRING_ARG(dpow,active,maskhex)
     n = komodo_notaries("KMD",pubkeys,current);
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
+        if ( myinfo->DPOWS[0] == 0 || myinfo->DPOWS[0]->currentbp == 0 )
+            return(clonestr("{\"error\":\"there is no dpow round yet started to check.\"}"));
         return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[0],myinfo->DPOWS[0]->currentbp),1));
 
         /*mask = myinfo->DPOWS[0]->lastrecvmask;
