@@ -1035,7 +1035,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
             while (haveutxo < 1)
             {
                 j++;
-                if (j == n) {
+                if ( j == n && n > 1 ) { // n > 1 is an exception for dpowlistunspent
                   haveutxo=0;
                   break;
                 }
