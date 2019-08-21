@@ -608,17 +608,19 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
     return(json);
 }
 
-cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t dpow)
+cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t utxosize)
 {
     char buf[128], buf2[128],*retstr; cJSON *array,*json = 0;
     if ( coin->FULLNODE < 0 )
     {
         if ( coinaddr == 0 )
             sprintf(buf,"");
-        else if ( dpow == 1 )
-            sprintf(buf,"%lu, %s", DPOW_UTXOSIZE, coinaddr);
+        else if ( dpow != 0 )
+            sprintf(buf,"%i, %s", utxosize, coinaddr);
         sprintf(buf2,"1, 99999999, [\"%s\"]",coinaddr);
-        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass, dpow == 1 ? "dpowlistunspent" : "listunspent", buf)) != 0 )
+        
+        fprintf(stderr, "buf.%s buf2.%s\n",buf, buf2);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass, dpow != 0 ? "dpowlistunspent" : "listunspent", buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
             //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
@@ -629,7 +631,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
             json = cJSON_Parse(retstr);
             //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
             free(retstr);
-        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
+        } else printf("%s null retstr from buf.%s buf2.%s\n",coin->symbol,buf,buf2);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -1022,7 +1024,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
     int32_t vout,haveutxo = 0; uint32_t i,j,n,r; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str,*address; uint8_t script[35];
     memset(txidp,0,sizeof(*txidp));
     *voutp = -1;
-    if ( (unspents= dpow_listunspent(myinfo,coin,coinaddr,1)) != 0 )
+    if ( (unspents= dpow_listunspent(myinfo,coin,coinaddr,dpow_utxosize(coin->symbol))) != 0 )
     {
         if ( (n= cJSON_GetArraySize(unspents)) > 0 )
         {
