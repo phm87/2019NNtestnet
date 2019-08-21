@@ -616,10 +616,16 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
         if ( coinaddr == 0 )
             sprintf(buf,"");
         else if ( dpow == 1 )
-            sprintf(buf,"1, 7777, [\"%s\"]",coinaddr);
+            sprintf(buf,"%i %s",DPOW_UTXOSIZ, coinaddr);
         else
             sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
-        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass, dpow == 1 ? "dpowlistunspent" : "listunspent", buf)) != 0 )
+        {
+            json = cJSON_Parse(retstr);
+            //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
+            free(retstr);
+        } 
+        else if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
             //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
@@ -1021,8 +1027,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
     {
         if ( (n= cJSON_GetArraySize(unspents)) > 0 )
         {
-            j=0;
-            while (haveutxo < 1)
+            for (j=0; j<n; j++)
             {
                 if ( n == 1 )
                     i = 0;
@@ -1031,8 +1036,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                     OS_randombytes((uint8_t *)&r,sizeof(r));
                     i = r % n;
                 }
-                j++;
-                printf("[%s] : chosen = %d  out of %d loop.(%d)\n",coin->symbol,i,n,j);
+                printf("[%s] : %d out of %d loop.(%d)\n",coin->symbol,i,n,j);
                 if ( (item= jitem(unspents,i)) == 0 )
                     continue;
                 if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
@@ -1047,17 +1051,11 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                         vout = jint(item,"vout");
                         if ( bits256_nonz(txid) != 0 && vout >= 0 )
                         {
-                            if ( *voutp < 0 || (rand() % (n/2+1)) == 0 )
-                            {
-                                *voutp = vout;
-                                *txidp = txid;
-                            }
+                            *voutp = vout;
+                            *txidp = txid;
                             haveutxo++;
                         }
                     }
-                }
-                if (j == n) {
-                  break;
                 }
             }
             if ( haveutxo == 0 )
