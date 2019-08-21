@@ -605,11 +605,15 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
 
 cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
-    char buf[128],*retstr; cJSON *array,*json = 0;
+    char buf[128],call[30],*retstr; cJSON *array,*json = 0;
     if ( coin->active == 0 ) return (0);
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
+	if ( strcmp(coin->symbol,"BTC") == 0 )
+		sprintf(call,"dpowlistunspent");
+	else
+		sprintf(call,"listunspent");
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
