@@ -158,7 +158,7 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
     {
         // 32 rnd numbers from 1 -> numnotaries-1. 
         rndnodes[i] = (dp->prevnotatxid.bytes[i] % (bp->numnotaries-1))+1;
-        printf("%i ", rndnodes[i]);
+        printf("%i, ", rndnodes[i]);
     }
     printf("\n"RESET);
     z = -1;
@@ -658,7 +658,7 @@ uint64_t iguana_fastnotariescount(struct supernet_info *myinfo, struct dpow_info
 
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified)
 {
-    bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768]; uint32_t channel,state; uint64_t failedbestmask;
+    bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t j,len,numsigs,flag=0; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768]; uint32_t channel,state; uint64_t failedbestmask;
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     memset(zero.bytes,0,sizeof(zero));
     memset(txid.bytes,0,sizeof(txid));
@@ -717,9 +717,30 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         // TODO: If this some how fails here its because a node has used a spent utxo. We can use gettxout here without much overhead to check all the vins. 
                         // This could flag that utxo and skip it from now on, if its yours. Or you could track score of whos node is breaking notarizations. 
                         // Some nodes may call gettxout at a later time than others and it could return a false positive. 
+                        printf(RED"dpow_sigscheck: [src.%s ht.%i] spent inputs from nodes: ",bp->srccoin->symbol,bp->height);
+                        for (j=0; j<bp->numnotaries; j++)
+                        {
+                            if ( ((1LL << j) & bp->bestmask) != 0 )
+                            {
+                                if ( src_or_dest != 0 )
+                                {
+                                    if ( dpow_gettxout(myinfo, bp->dest, bp->notaries[j].dest.prev_hash, bp->notaries[j].dest.prev_vout) == 0 ) 
+                                        flag++;
+                                }
+                                else 
+                                {
+                                    if ( dpow_gettxout(myinfo, bp->src, bp->notaries[j].src.prev_hash, bp->notaries[j].src.prev_vout) == 0 ) 
+                                        flag++;
+                                }
+                                if ( flag != 0 )
+                                {
+                                    printf("%s, ", Notaries_elected[j][0]);
+                                    flag = 0;
+                                }
+                            }
+                        }
+                        printf(" \n"RESET);
                         bp->state = 0xffffffff;
-                        printf(RED"dpow_sigscheck: [src.%s ht.%i] mismatched txid.%s vs %s\n"RESET,bp->srccoin->symbol,bp->height,bits256_str(str,txid),retstr);
-                        //dpow_heightfind2(myinfo,dp,bp->height);
 #ifdef LOGTX
                         FILE * fptr;
                         fptr = fopen("/home/node/failed_notarizations", "a+");
