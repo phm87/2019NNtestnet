@@ -714,7 +714,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                     }
                     else
                     {
-                        // TODO: If this some how fails here its because a node has used a spent utxo. We can use gettxout here without much overhead to check all the vins. 
+                        // If this some how fails here its because a node has used a spent utxo. We can use gettxout here without much overhead to check all the vins. 
                         // This could flag that utxo and skip it from now on, if its yours. Or you could track score of whos node is breaking notarizations. 
                         // Some nodes may call gettxout at a later time than others and it could return a false positive. 
                         printf(RED"dpow_sigscheck: [src.%s ht.%i] spent inputs from nodes: ",bp->srccoin->symbol,bp->height);
@@ -724,12 +724,12 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                             {
                                 if ( src_or_dest != 0 )
                                 {
-                                    if ( dpow_gettxout(myinfo, bp->dest, bp->notaries[j].dest.prev_hash, bp->notaries[j].dest.prev_vout) == 0 ) 
+                                    if ( dpow_gettxout(myinfo, bp->destcoin, bp->notaries[j].dest.prev_hash, bp->notaries[j].dest.prev_vout) == 0 ) 
                                         flag++;
                                 }
                                 else 
                                 {
-                                    if ( dpow_gettxout(myinfo, bp->src, bp->notaries[j].src.prev_hash, bp->notaries[j].src.prev_vout) == 0 ) 
+                                    if ( dpow_gettxout(myinfo, bp->srccoin, bp->notaries[j].src.prev_hash, bp->notaries[j].src.prev_vout) == 0 ) 
                                         flag++;
                                 }
                                 if ( flag != 0 )
