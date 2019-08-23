@@ -1985,7 +1985,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
     {
         if ( bp->myind != senderind )
         {
-            if ( (tmpjson= dpow_gettxout(myinfo, bp->srccoin, bp->notaries[senderind].src.prev_hash, bp->notaries[senderind].src.prev_vout)) != 0 )
+            if ( (tmpjson= dpow_gettxout(myinfo, bp->srccoin, srcutxo, srcvout)) != 0 )
             {
                 bp->notaries[senderind].src.prev_hash = srcutxo;
                 bp->notaries[senderind].src.prev_vout = srcvout;
@@ -1994,7 +1994,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 //char str[65]; printf("%s senderind.%d <- %s/v%d\n",dp->symbol,senderind,bits256_str(str,srcutxo),srcvout);
                 utxos++;
             }
-            if ( (tmpjson= dpow_gettxout(myinfo, bp->destcoin, bp->notaries[senderind].dest.prev_hash, bp->notaries[senderind].dest.prev_vout)) != 0 )
+            if ( (tmpjson= dpow_gettxout(myinfo, bp->destcoin, destutxo, destvout)) != 0 )
             {
                 bp->notaries[senderind].dest.prev_hash = destutxo;
                 bp->notaries[senderind].dest.prev_vout = destvout;
