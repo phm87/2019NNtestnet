@@ -5,6 +5,7 @@ We seem to have a problem currently where notarizations are being distributed am
 Some common used terms that you need to know: 
 - recvmask : This is a bitwise mask, that can have either 1 or 0 for each of the 64 nodes. To enter it (1), you must send utxos to every node, who will then include you in their recvmask otherwise its (0) for your node. 
 - bestk : This is a rotating number based on block height that determines the last node elegible for a notarization. eg bestk = 0, numnotaries = 64, minsigs = 13, nodes 52,53,54,55,56,57,58,59,60,61,62,63,0 are chosen to notarize. 
+> Does it mean that when bestk is 1 then nodes 53,54,55,56,57,58,59,60,61,62,63,0,1 are chosen to notarize ?
 - bestmask: This is the nodes actually chosen to notarize. eg bestk = 0, numnotaries = 64, minsigs = 13, nodes not in recvmask = 54,60, nodes 52,53,55,56,57,58,59,61,62,63,0,1,2 are chosen to notarize. 
 
 ## How dPoW works currently:
@@ -12,7 +13,8 @@ Some common used terms that you need to know:
 It may be wise to take a step back and explain how the dpow is actually working currently, it may be easier to see the problem and understand my proposed solution.
     
 1) A block happens on the source chain that is (height % freq == 0) so on LABS this is every 5 blocks. This triggers the iguanas to start a `dpow_statemachinestart` thread. This thread runs on a 30s iteration timer. So it should take a few iterations to create a notarization. Obviously faster is better, but in a global distributed network, it's not possible that all nodes can get their message to everyone else instantly, the speed of light exists! :)
-    
+> I imagined that there was one thread per coin dpowed. Can we improve performances (and scalability) to have one thread per smartchain/coin instead of creating one thread when a block happens on the source chain that is (height % freq == 0) ?
+
 2) First iteration:
     - Get source/dest chaintips, MoM, MoMoM etc
     - Get utxos for source/dest
@@ -172,6 +174,9 @@ nodes not in recvmask = 3, 25
 3 offline so new bestk = 4
 bestmask: 55,56,57,58,59,61,62,63,0,1,2,4 are chosen to notarize. 
 ```
+> Question: Why node 4 as chosen one instead of node 3 ?
+> Question: Why 12 NN in the example instead of 12 ?
+
 New: 
 ```
 numnotaries = 64, 
@@ -180,6 +185,7 @@ bestk = 3: 55,56,57,58,59,60,61,62,63,0,1,2,3 are chosen to notarize.
 nodes not in recvmask = 3, 25
 bestmask: 55,56,57,58,59,60,61,62,63,0,1,2,28 are chosen to notarize. 
 ```
+ > Question: Why node 28 as chosen one instead of node 3 ?
 
 I hope this made sense, and welcome any suggestions to improve it! 
 
