@@ -972,7 +972,7 @@ cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_block *bp)
     return(retjson);
 }
 
-STRING_ARG(dpow,active,maskhex)
+STRING_ARG(dpow,active,maskhex,symbol)
 {
     uint8_t data[8],revdata[8],pubkeys[64][33]; int32_t i,len,current,n; uint64_t mask; cJSON *infojson,*retjson,*array,*notarray;
     array = cJSON_CreateArray();
@@ -983,13 +983,17 @@ STRING_ARG(dpow,active,maskhex)
         free_json(infojson);
     } else return(clonestr("{\"error\":\"cant get current height\"}"));
     n = komodo_notaries("KMD",pubkeys,current); */
-    if ( myinfo->DPOWS[0] == 0 )
-        return(clonestr("{\"error\":\"there is no active dpow coins.\"}"));
+    for (i=0; i<myinfo->numdpows; i++)
+        if ( strcmp(symbol,myinfo->DPOWS[i]->symbol) == 0 )
+            break;
+    
+    if ( i == myinfo->numdpows || myinfo->DPOWS[i] == 0 )
+        return(clonestr("{\"error\":\"invalid dpow coin\"}"));
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
-        if ( myinfo->DPOWS[0]->currentbp == 0 )
+        if ( myinfo->DPOWS[i]->currentbp == 0 )
             return(clonestr("{\"error\":\"there is no dpow round started to check.\"}"));
-        return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[0]->currentbp),1));
+        return(jprint(dpow_recvmasks(myinfo,myinfo->DPOWS[i]->currentbp),1));
 
         /*mask = myinfo->DPOWS[0]->lastrecvmask;
         for (i=0; i<n; i++)
