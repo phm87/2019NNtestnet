@@ -2011,8 +2011,10 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         }
         if ( utxos == 2 )
             bp->recvmask |= (1LL << senderind);
-        else 
+        
+        if ( (bp->recvmask & (1LL << senderind)) == 0 )
             printf(MAGENTA"[%s] : %s has submit spent utxo, ignore them\n"RESET,dp->symbol,Notaries_elected[senderind][0]);
+        
         if ( (bp->recvmask & (1LL << bp->myind)) == 0 && rand() % 100 < 1 )
             printf(RED"[%s] : %s is not in recvmask.%llx ... check utxos\n"RESET,dp->symbol,Notaries_elected[bp->myind][0],(long long)bp->recvmask);
         
