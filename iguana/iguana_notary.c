@@ -972,7 +972,7 @@ cJSON *dpow_recvmasks(struct supernet_info *myinfo,struct dpow_block *bp)
     return(retjson);
 }
 
-STRING_ARG(dpow,active,maskhex,symbol)
+TWO_STRINGS(dpow,active,maskhex,symbol)
 {
     uint8_t data[8],revdata[8],pubkeys[64][33]; int32_t i,len,current,n; uint64_t mask; cJSON *infojson,*retjson,*array,*notarray;
     array = cJSON_CreateArray();
