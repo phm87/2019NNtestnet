@@ -1984,7 +1984,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         return;
     if ( bp->isratify == 0 && bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
-        if ( bp->myind != senderind )
+        if ( bp->myind != senderind && (bp->recvmask & (1LL << senderind)) == 0 )
         {
             if ( (tmpjson= dpow_gettxout(myinfo, bp->srccoin, srcutxo, srcvout)) != 0 )
             {
@@ -2012,8 +2012,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         if ( utxos == 2 )
             bp->recvmask |= (1LL << senderind);
         else 
-            printf(MAGENTA"[%s] : %s is not in recvmask\n"RESET,dp->symbol,Notaries_elected[senderind][0]);
-        
+            printf(MAGENTA"[%s] : %s has submit spent utxo, ignore them\n"RESET,dp->symbol,Notaries_elected[senderind][0]);
         if ( (bp->recvmask & (1LL << bp->myind)) == 0 && rand() % 100 < 1 )
             printf(RED"[%s] : %s is not in recvmask.%llx ... check utxos\n"RESET,dp->symbol,Notaries_elected[bp->myind][0],(long long)bp->recvmask);
         
@@ -2354,7 +2353,11 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     //printf("v.%02x %02x datalen.%d size.%d %d vs %d\n",np->version0,np->version1,np->datalen,size,np->datalen,(int32_t)(size - sizeof(*np)));
                     if ( np->datalen == (size - sizeof(*np)) )
                     {
-                        printf("senderind.%i vs actual_sender.%i\n", np->senderind, fromnode);
+                        if ( np->senderind != fromnode )
+                        {
+                            printf(RED"Ignore fake packet: senderind.%s vs actual_sender.%s\n"RESET, Notaries_elected[np->senderind][0],  Notaries_elected[fromnode][0]);
+                            continue;
+                        }
                         crc32 = calc_crc32(0,np->packet,np->datalen);
                         dp = 0;
                         for (i=0; i<myinfo->numdpows; i++)
