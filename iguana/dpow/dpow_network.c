@@ -2009,11 +2009,10 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             bp->notaries[bp->myind].dest.prev_hash = bp->mydestutxo;
         }
         if ( utxos == 2 )
-        {
             bp->recvmask |= (1LL << senderind);
-            //if ( rand() % 100 < 1 )
-            //    fprintf(stderr, MAGENTA"[%s] : %s is in recvmask %llx\n"RESET,dp->symbol,Notaries_elected[senderind][0],(long long)bp->recvmask);
-        }
+        else 
+            printf(MAGENTA"[%s] : %s is not in recvmask\n"RESET,dp->symbol,Notaries_elected[senderind][0]);
+        
         if ( (bp->recvmask & (1LL << bp->myind)) == 0 && rand() % 100 < 1 )
             printf(RED"[%s] : %s is not in recvmask.%llx ... check utxos\n"RESET,dp->symbol,Notaries_elected[bp->myind][0],(long long)bp->recvmask);
         
