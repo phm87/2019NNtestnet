@@ -1989,7 +1989,6 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             {
                 bp->notaries[senderind].src.prev_hash = srcutxo;
                 bp->notaries[senderind].src.prev_vout = srcvout;
-                bp->notaries[senderind].src.valid = 1;
                 free_json(tmpjson);
                 tmpjson = 0;
                 //char str[65]; printf("%s senderind.%d <- %s/v%d\n",dp->symbol,senderind,bits256_str(str,srcutxo),srcvout);
@@ -1999,7 +1998,6 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             {
                 bp->notaries[senderind].dest.prev_hash = destutxo;
                 bp->notaries[senderind].dest.prev_vout = destvout;
-                bp->notaries[senderind].dest.valid = 1;
                 free_json(tmpjson);
                 tmpjson = 0;
                 utxos++;
