@@ -1619,12 +1619,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
     memset(counts,0,sizeof(counts));
     for (jk=numdiff=i=0; i<bp->numnotaries; i++)
     {
-        if ( bits256_nonz(bp->notaries[i].src.prev_hash) != 0 && bits256_nonz(bp->notaries[i].dest.prev_hash) != 0 )
-        {
-            recvmask |= (1LL << i);
-            bp->recvmask |= recvmask;
-        }
-        else 
+        if ( ((1LL << i) & bp->recvmask) == 0 ) 
         {
             //fprintf(stderr, "node.%i no utxos duration.%u\n",i,(uint32_t)time(NULL)-bp->starttime);
             continue;        
@@ -1678,7 +1673,7 @@ void dpow_bestconsensus(struct dpow_info *dp,struct dpow_block *bp)
                 bestmatches++;
         }
     }
-    if ( (bestmatches > bp->bestmatches || (bestmatches == bp->bestmatches && matches > bp->matches)) && besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
+    if ( (bestmatches > bp->bestmatches || (bestmatches == bp->bestmatches && matches > bp->matches)) && besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (bp->recvmask & masks[besti]) == masks[besti] )
     {
         bp->matches = matches;
         bp->bestmatches = bestmatches;
@@ -1990,17 +1985,23 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
     {
         if ( bp->myind != senderind )
         {
-            if ( bits256_nonz(srcutxo) != 0 )
+            if ( bits256_nonz(srcutxo) != 0 && (tmpjson= dpow_gettxout(myinfo, bp->srccoin, bp->notaries[senderind].src.prev_hash, bp->notaries[senderind].src.prev_vout)) != 0 )
             {
                 bp->notaries[senderind].src.prev_hash = srcutxo;
                 bp->notaries[senderind].src.prev_vout = srcvout;
+                bp->notaries[senderind].src.valid = 1;
+                free_json(tmpjson);
+                tmpjson = 0;
                 //char str[65]; printf("%s senderind.%d <- %s/v%d\n",dp->symbol,senderind,bits256_str(str,srcutxo),srcvout);
                 utxos++;
             }
-            if ( bits256_nonz(destutxo) != 0 )
+            if ( bits256_nonz(destutxo) != 0 && (tmpjson= dpow_gettxout(myinfo, bp->destcoin, bp->notaries[senderind].dest.prev_hash, bp->notaries[senderind].dest.prev_vout)) != 0 )
             {
                 bp->notaries[senderind].dest.prev_hash = destutxo;
                 bp->notaries[senderind].dest.prev_vout = destvout;
+                bp->notaries[senderind].dest.valid = 1;
+                free_json(tmpjson);
+                tmpjson = 0;
                 utxos++;
             }
         }

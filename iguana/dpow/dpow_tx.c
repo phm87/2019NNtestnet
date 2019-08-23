@@ -714,8 +714,8 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                     }
                     else
                     {
-                        // If this some how fails here its because a node has used a spent utxo. We can use gettxout here without much overhead to check all the vins. 
-                        // This could flag that utxo and skip it from now on, if its yours. Or you could track score of whos node is breaking notarizations. 
+                        // If this fails its because a node has used a spent utxo.
+                        // This should never happen because it checks the utxos are unspent in dpow_notarize_update.
                         printf(RED"dpow_sigscheck: [src.%s ht.%i] inputs spent: \n",bp->srccoin->symbol,bp->height);
                         for (j=0; j<bp->numnotaries; j++)
                         {
@@ -769,7 +769,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         dp->lastbanheight[j] = bp->height;
                     }
                 bp->state = 0xffffffff;
-                printf(RED"failed notary tx verification\n"RESET);
             }
         } //else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
     }
