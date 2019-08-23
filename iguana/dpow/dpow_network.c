@@ -110,7 +110,7 @@ int32_t signed_nn_send(struct supernet_info *myinfo,void *ctx,bits256 privkey,in
     return(-1);
 }
 
-int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t notaries[64][33],int32_t n,int32_t sock,void *packetp)
+int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t notaries[64][33],int32_t n,int32_t sock,void *packetp, int32_t *fromnode)
 {
     int32_t i=0,recvbytes; uint8_t pubkey33[33],pubkey0[33]; bits256 packethash; struct signed_nnpacket *sigpacket=0;
     *(void **)packetp = 0;
@@ -139,8 +139,8 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
         {
             if ( bitcoin_recoververify(myinfo->ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
             {
+                /* expand to official notaries
                 char *notary0 = "03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828";
-                // expand to official notaries
                 decode_hex(pubkey0,33,notary0);
                 if ( memcmp(pubkey0,pubkey33,33) == 0 )
                 {
@@ -148,7 +148,7 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
                     *freeptrp = sigpacket;
                     //printf("got signed packet from notary0\n");
                     return((int32_t)(recvbytes - sizeof(*sigpacket)));
-                }
+                }*/
                 for (i=0; i<n && i<64; i++)
                 {
                     if ( memcmp(pubkey33,notaries[i],33) == 0 )
@@ -156,6 +156,7 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
                         *(void **)packetp = (void **)((uint64_t)sigpacket + sizeof(*sigpacket));
                         //printf("got signed packet from notary.%d\n",i);
                         *freeptrp = sigpacket;
+                        *fromnode = i;
                         return((int32_t)(recvbytes - sizeof(*sigpacket)));
                     }
                     if ( 0 && i < 2 )
@@ -357,7 +358,7 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
 
 char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen)
 {
-    struct dex_nanomsghdr *dexp; cJSON *retjson; char ipaddr[64],str[128]; int32_t prio,timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits; void *freeptr; char *retstr = 0;
+    struct dex_nanomsghdr *dexp; cJSON *retjson; char ipaddr[64],str[128]; int32_t prio,timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock,fromnode=-1; uint32_t *retptr,ipbits; void *freeptr; char *retstr = 0;
     portable_mutex_lock(&myinfo->dexmutex);
     subsock = myinfo->subsock;
     reqsock = myinfo->reqsock;
@@ -452,7 +453,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
         }
         //for (i=0; i<datalen; i++)
         //    printf("%02x",((uint8_t *)data)[i]);
-        if ( (recvbytes= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->reqsock,&retptr)) >= 0 )
+        if ( (recvbytes= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->reqsock,&retptr,&fromnode)) >= 0 )
         {
             //printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
@@ -1250,10 +1251,10 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
 
 int32_t dex_subsock_poll(struct supernet_info *myinfo)
 {
-    int32_t size= -1; struct dex_nanomsghdr *dexp; void *freeptr;
+    int32_t size= -1, fromnode=-1; struct dex_nanomsghdr *dexp; void *freeptr;
     //return(0);
     //fprintf(stderr,"subsock.%d\n",myinfo->subsock);
-    if ( myinfo->subsock >= 0 && (size= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->subsock,&dexp)) >= 0 )
+    if ( myinfo->subsock >= 0 && (size= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->subsock,&dexp,&fromnode)) >= 0 )
     {
         if ( dexp != 0 )
         {
@@ -2329,7 +2330,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
 
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
 {
-    int32_t i,n,num,num2,flags=0,size,iter,lastval=0,broadcastflag,firstz = -1; char *retstr; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0; void *freeptr;
+    int32_t i,n,num,num2,flags=0,size,iter,lastval=0,broadcastflag,firstz = -1,fromnode=-1; char *retstr; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0; void *freeptr;
     if ( time(NULL) < myinfo->nanoinit+5 || (myinfo->dpowsock < 0 && myinfo->dexsock < 0 && myinfo->repsock < 0) )
         return(-1);
     if ( myinfo->IAMNOTARY != 0 && myinfo->numnotaries <= 0 )
@@ -2342,7 +2343,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     for (iter=0; iter<100; iter++)
     {
         freeptr = 0;
-        if ( (flags & 1) == 0 && (size= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) > 0 )
+        if ( (flags & 1) == 0 && (size= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np, &fromnode)) > 0 )
         {
             num++;
             if ( size >= sizeof(*np) )
@@ -2353,6 +2354,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     //printf("v.%02x %02x datalen.%d size.%d %d vs %d\n",np->version0,np->version1,np->datalen,size,np->datalen,(int32_t)(size - sizeof(*np)));
                     if ( np->datalen == (size - sizeof(*np)) )
                     {
+                        printf("senderind.%i vs actual_sender.%i\n", np->senderind, fromnode);
                         crc32 = calc_crc32(0,np->packet,np->datalen);
                         dp = 0;
                         for (i=0; i<myinfo->numdpows; i++)
