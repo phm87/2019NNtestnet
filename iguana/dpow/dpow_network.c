@@ -1978,7 +1978,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
 
 void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][DPOW_MAXSIGLEN],uint32_t paxwdcrc)
 {
-    bits256 srchash; uint32_t now; int32_t i,flag,bestmatches = 0,matches = 0,paxmatches = 0,paxbestmatches = 0,utxos=0;
+    bits256 srchash; uint32_t now; int32_t i,flag,bestmatches = 0,matches = 0,paxmatches = 0,paxbestmatches = 0,utxos=0; cJSON* tmpjson = 0;
     if ( bp->myind < 0 )
         return;
     if ( bp->isratify == 0 && bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
