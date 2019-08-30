@@ -615,6 +615,20 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
             json = cJSON_Parse(retstr);
             //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
             free(retstr);
+            if (!json->child)   {
+                // printf("phm87 : %s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
+                // printf("phm87 : empty json : no child\n");
+                return (0);
+                }
+            else if (json == cJSON_CreateArray())  {
+                // printf("phm87 : %s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
+                // printf("phm87 : empty json : empty array\n");
+                return (0);
+                }
+            else
+                {
+                // printf("phm87: json not empty\n");
+                }
         } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
