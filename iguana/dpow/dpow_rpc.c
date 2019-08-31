@@ -827,7 +827,7 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
         char colour[16];
-        sprintf(colour,mine != 0 ? GREEN : RED);
+        sprintf(colour,mine != 0 ? GREEN : YELLOW);
         fprintf(stderr,"%s>>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n"RESET,colour,coin->symbol,retstr);
         free(paramstr);
         return(retstr);
@@ -1069,7 +1069,6 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                         {
                             *voutp = vout;
                             *txidp = txid;
-                            printf("[%s] utxo %d of %d n",coin->symbol,i,n);
                             break;
                         }
                     }
@@ -1077,8 +1076,9 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
             }
         } //else printf("null utxo array size\n");
         free_json(unspents);
-        if ( j==n )
-            printf(RED"no (%s -> %s) utxo: need to fund address.(%s) or wait for splitfund to confirm\n"RESET,srccoin,coin->symbol,coinaddr);
+        if ( *voutp == -1 )
+            printf(RED"no (%s -> %s) utxo: create %lu sat utxos to address.(%s)\n"RESET,srccoin,coin->symbol,DPOW_UTXOSIZE,coinaddr);
+        //else printf("[%s] utxo %d of %d \n",coin->symbol,i,n);
     } else printf("null return from dpow_listunspent\n");
     return(haveutxo);
 }

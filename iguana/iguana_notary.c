@@ -91,7 +91,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             supressfreq = 3;
         }
 #endif
-        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
+        if ( dp->freq < 5 && dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
         {
             suppress = 1;
             //fprintf(stderr,"suppress %s -> KMD freq KMD blocks.%d\n",dp->symbol,checkpointfreq);
