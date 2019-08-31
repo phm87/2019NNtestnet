@@ -91,10 +91,10 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             supressfreq = 3;
         }
 #endif
-        if ( dp->freq < 5 && dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
+        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq ) //dp->freq < 5 && // this should be used, for coins with a freq set! 
         {
             suppress = 1;
-            //fprintf(stderr,"suppress %s -> KMD freq KMD blocks.%d\n",dp->symbol,checkpointfreq);
+            printf(YELLOW"[%s:%i] suppress %i more KMD blocks\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->prevDESTHEIGHT+supressfreq-dp->DESTHEIGHT);
         }
     }
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
@@ -144,7 +144,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( suppress == 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % dp->freq) == 0 )
     {
         //dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
-        //dp->prevDESTHEIGHT = dp->DESTHEIGHT;
+        dp->prevDESTHEIGHT = bp->pendingprevDESTHT == 0 ? 0 : dp->DESTHEIGHT;
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
