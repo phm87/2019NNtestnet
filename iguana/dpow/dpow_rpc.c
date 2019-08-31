@@ -1040,7 +1040,7 @@ int32_t dpow_vini_ismine(struct supernet_info *myinfo,struct dpow_info *dp,cJSON
 
 int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin)
 {
-    int32_t vout,haveutxo = 0; uint32_t i,j,n,r; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str,*address; uint8_t script[35];
+    int32_t vout,haveutxo = 0; uint32_t i,j=0,n,r; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str,*address; uint8_t script[35];
     if ( coin->active == 0 ) return (0);
     memset(txidp,0,sizeof(*txidp));
     *voutp = -1;
@@ -1048,18 +1048,11 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
     {
         if ( (n= cJSON_GetArraySize(unspents)) > 0 )
         {
-            j=0;
-            while (haveutxo < 1)
+            OS_randombytes((uint8_t *)&r,sizeof(r));
+            for ( i=(n==1 ? 0 : r % n); j<n; i++ )
             {
-                if ( n == 1 )
-                    i = 0;
-                else
-                {
-                    OS_randombytes((uint8_t *)&r,sizeof(r));
-                    i = r % n;
-                }
                 j++;
-                printf("[%s] : chosen = %d  out of %d loop.(%d)\n",coin->symbol,i,n,j);
+                i = (i==n ? 0 : i);
                 if ( (item= jitem(unspents,i)) == 0 )
                     continue;
                 if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
@@ -1074,26 +1067,20 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                         vout = jint(item,"vout");
                         if ( bits256_nonz(txid) != 0 && vout >= 0 )
                         {
-                            if ( *voutp < 0 || (rand() % (n/2+1)) == 0 )
-                            {
-                                *voutp = vout;
-                                *txidp = txid;
-                            }
-                            haveutxo++;
+                            *voutp = vout;
+                            *txidp = txid;
+                            break;
                         }
                     }
                 }
-                if (j == n) {
-                  break;
-                }
             }
-            if ( haveutxo == 0 )
-              printf("no (%s -> %s) utxo: need to fund address.(%s) or wait for splitfund to confirm\n",srccoin,coin->symbol,coinaddr);
         } //else printf("null utxo array size\n");
         free_json(unspents);
+        if ( j<n )
+            printf("[%s] utxo %d of %d n",coin->symbol,i,n);
+        else
+            printf(RED"no (%s -> %s) utxo: need to fund address.(%s) or wait for splitfund to confirm\n"RESET,srccoin,coin->symbol,coinaddr);
     } else printf("null return from dpow_listunspent\n");
-    if ( 0 && haveutxo > 0 )
-        printf("%s haveutxo.%d\n",coin->symbol,haveutxo);
     return(haveutxo);
 }
 

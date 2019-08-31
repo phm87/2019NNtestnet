@@ -306,6 +306,7 @@ void dpow_statemachinestart(void *ptr)
         dp->blocks[blockindex] = bp;
         portable_mutex_unlock(&dpowT_mutex);
         //printf("blockindex.%i allocate bp for %s ht.%d -> %s\n",blockindex,src->symbol,checkpoint.blockhash.height,dest->symbol);
+        bp->pendingprevDESTHT = dp->DESTHEIGHT;
         bp->MoM = MoM;
         bp->MoMdepth = MoMdepth;
         bp->CCid = dp->fullCCid & 0xffff;
