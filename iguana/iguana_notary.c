@@ -144,7 +144,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( suppress == 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % dp->freq) == 0 )
     {
         //dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
-        dp->prevDESTHEIGHT = bp->prevDESTHEIGHT == 0 ? 0 : dp->DESTHEIGHT;
+        dp->prevDESTHEIGHT = dp->prevDESTHEIGHT == 0 ? 0 : dp->DESTHEIGHT;
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
