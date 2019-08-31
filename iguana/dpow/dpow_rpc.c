@@ -1069,6 +1069,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                         {
                             *voutp = vout;
                             *txidp = txid;
+                            printf("[%s] utxo %d of %d n",coin->symbol,i,n);
                             break;
                         }
                     }
@@ -1076,9 +1077,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
             }
         } //else printf("null utxo array size\n");
         free_json(unspents);
-        if ( j<n )
-            printf("[%s] utxo %d of %d n",coin->symbol,i,n);
-        else
+        if ( j==n )
             printf(RED"no (%s -> %s) utxo: need to fund address.(%s) or wait for splitfund to confirm\n"RESET,srccoin,coin->symbol,coinaddr);
     } else printf("null return from dpow_listunspent\n");
     return(haveutxo);
