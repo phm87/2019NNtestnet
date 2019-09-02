@@ -2027,7 +2027,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     else bp->destsigsmasks[bestk] &= ~(1LL << senderind);
                 }
             }
-        }        
+        }
         if ( bp->bestk >= 0 )
         {
             flag = -1;
