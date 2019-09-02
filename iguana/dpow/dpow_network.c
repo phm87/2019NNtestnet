@@ -2102,8 +2102,8 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 {
                     printf(GREEN"new PENDING BESTK.%d( ",bp->bestk);
                     for (i=0; i<bp->numnotaries; i++)
-                            if ( ((1LL << i) & bp->bestmask) != 0 )
-                                printf("%i, ",i);
+                        if ( ((1LL << i) & bp->bestmask) != 0 )
+                            printf("%i, ",i);
                     printf(") previous bestks: "MAGENTA);
                     int n = 0;
                     for ( i=dp->numbestks; n<64; i-- )

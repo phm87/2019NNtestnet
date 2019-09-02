@@ -654,11 +654,11 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
     return(retval);
 }
 
-uint64_t iguana_fastnotariescount(struct supernet_info *myinfo, struct dpow_info *dp, struct dpow_block *bp, int32_t src_or_dest);
+uint64_t iguana_fastnotariescount(struct supernet_info *myinfo, struct dpow_info *dp, struct dpow_block *bp, int32_t src_or_dest, int32_t checkall);
 
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified)
 {
-    bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768]; uint32_t channel,state; uint64_t failedbestmask;
+    bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t i,j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768]; uint32_t channel,state; uint64_t failedbestmask;
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     memset(zero.bytes,0,sizeof(zero));
     memset(txid.bytes,0,sizeof(txid));
@@ -670,7 +670,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs ) 
         {
-            if ( (failedbestmask= iguana_fastnotariescount(myinfo, dp, bp, src_or_dest)) == bestmask )
+            if ( (failedbestmask= iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 0)) == bestmask )
             {
                 if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx,(bestmask & (1LL << bp->myind)) != 0)) != 0 )
                 {
@@ -735,13 +735,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         }
                         printf(" \n"RESET);
                         bp->state = 0xffffffff;
-#ifdef LOGTX
-                        FILE * fptr;
-                        fptr = fopen("/home/node/failed_notarizations", "a+");
-                        unsigned long dwy_timestamp = time(NULL);
-                        fprintf(fptr, "%lu %s %s %d %s\n", dwy_timestamp, bp->srccoin->symbol,bp->destcoin->symbol,src_or_dest,bp->signedtx);
-                        fclose(fptr);
-#endif
                     }
                     free(retstr);
                     retstr = 0;
@@ -759,15 +752,41 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                   all nodes that are online will 100% agree which signitures are false. 
                   we can temporarily skip them from the next round. This means at worst a malicious node can only break every second notarization. 
                 */
-                
-                uint64_t maskdiff = bp->bestmask^failedbestmask;
-                printf(RED"failedbestmask.%llx bestmask.%llx maskdiff.%llx\n"RESET,(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
-                for (j=0; j<bp->numnotaries; j++)
-                    if ( (maskdiff & (1LL << j)) != 0 )
-                    {
-                        printf(RED"[%s] has submitted incorrect sig, ban them from the next round\n"RESET, Notaries_elected[j][0]);
-                        dp->lastbanheight[j] = bp->height;
-                    }
+                printf(RED""dpow_sigscheck: [src.%s ht.%i] failedbestmask.%llx bestmask.%llx maskdiff.%llx\n"RESET,bp->srccoin->symbol,bp->height,(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
+                if ( failedbestmask == 0 )
+                {
+                    // the tx has failed for every notary, we cannot ban them all. This is likley detecting a bug rather than a malicious node.
+                    // check if the tx was signed by nodes not int he bestmask. 
+                    char printstr[65536];
+                    sprintf(printstr,"[src.%s ht.%i] coin.%s tx.%s\n",bp->srccoin->symbol,bp->height,coin->symbol,bp->signedtx);
+                    uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1));
+                    sprintf(printstr,"nodes signed:");
+                    for (i=0; i<bp->numnotaries; i++)
+                        if ( ((1LL << i) & testmask) != 0 )
+                            sprintf(printstr,"%i, ",i);
+                    sprintf(printstr," vs nodes in bestmask:");
+                    for (i=0; i<bp->numnotaries; i++)
+                        if ( ((1LL << i) & bp->bestmask) != 0 )
+                            sprintf(printstr,"%i, ",i);
+                    printf("%s\n",printstr);
+#ifdef LOGTX
+                    FILE * fptr;
+                    fptr = fopen("failed_sigcheck_allnodes", "a+");
+                    fprintf(fptr, "%s\n",printstr);
+                    fclose(fptr);
+#endif        
+                }
+                else 
+                {
+                    // some node/s signed incorrectly..
+                    uint64_t maskdiff = bp->bestmask^failedbestmask;
+                    for (j=0; j<bp->numnotaries; j++)
+                        if ( (maskdiff & (1LL << j)) != 0 )
+                        {
+                            printf(RED"[%s] has submitted incorrect sig, ban them from the next round\n"RESET, Notaries_elected[j][0]);
+                            dp->lastbanheight[j] = bp->height;
+                        }
+                }
                 bp->state = 0xffffffff;
             }
         } //else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
