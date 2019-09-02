@@ -832,9 +832,9 @@ cJSON *dpow_kvsearch(struct supernet_info *myinfo,struct iguana_info *coin,char 
 }
 
 
-char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx, int32_t mine)
+char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx, int32_t mine, int32_t *errorcode)
 {
-    bits256 txid; cJSON *json,*array; char *paramstr,*retstr;
+    bits256 txid; cJSON *json,*array,*errorjson = 0,*retjson = 0; char *paramstr,*retstr;
     if ( coin->active == 0 ) return (0);
     if ( coin->FULLNODE < 0 )
     {
@@ -842,6 +842,11 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
+        if ( errorcode != 0 && (retjson= cJSON_Parse(retstr)) != 0 && (errorjson= jobj(retjson,"error")) != 0 )
+        {
+            *errorcode = jint(errorjson,"code");
+            return(0);
+        }
         char colour[16];
         sprintf(colour,mine != 0 ? GREEN : YELLOW);
         printf("%s>>>>>>>>>> %s dpow_sendrawtransaction (%s)\n"RESET,colour,coin->symbol,retstr);

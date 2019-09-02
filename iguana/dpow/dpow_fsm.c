@@ -145,7 +145,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         jaddistr(addresses,coinaddr);
         if ( myinfo->nosplit == 0 && (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
         {
-            if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx, 0)) != 0 )
+            if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx, 0, 0)) != 0 )
             {
                 printf("sendrawtransaction.(%s)\n",sendtx);
                 free(sendtx);
@@ -721,7 +721,7 @@ void dpow_statemachinestart(void *ptr)
             } else fprintf(stderr, "[%s] get raw transaction error\n", dp->dest);
             if ( send_src == 1 )
             {
-                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->destcoin, desttx,0);
+                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->destcoin, desttx,0,0);
                 free(tmpstr);
             }
         }
@@ -755,7 +755,7 @@ void dpow_statemachinestart(void *ptr)
             } else fprintf(stderr, "[%s] get raw transaction error\n", dp->symbol);
             if ( send_src == 1 )
             {
-                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->srccoin, srctx,0);
+                char *tmpstr = dpow_sendrawtransaction(myinfo, bp->srccoin, srctx,0,0);
                 free(tmpstr);
             }
         }

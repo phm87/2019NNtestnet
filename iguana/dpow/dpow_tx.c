@@ -658,7 +658,7 @@ uint64_t iguana_fastnotariescount(struct supernet_info *myinfo, struct dpow_info
 
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified)
 {
-    bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t i,j,len,numsigs,buflen; char *retstr=0,str[65],str2[65],printstr[65536]; uint8_t txdata[32768]; uint32_t channel,state; uint64_t failedbestmask;
+    bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t i,j,len,numsigs,buflen=0,errorcode=0; char *retstr=0,str[65],str2[65],printstr[65536]; uint8_t txdata[32768]; uint32_t channel,state; uint64_t testbestmask;
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     memset(zero.bytes,0,sizeof(zero));
     memset(txid.bytes,0,sizeof(txid));
@@ -670,130 +670,108 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs ) 
         {
-            if ( (failedbestmask= iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 0)) == bestmask )
+            if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx,(bestmask & (1LL << bp->myind),) != 0),&errorcode) != 0 )
             {
-                if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx,(bestmask & (1LL << bp->myind)) != 0)) != 0 )
+                //printf("sendrawtransaction.(%s)\n",retstr);
+                if ( is_hexstr(retstr,0) == sizeof(txid)*2 )
                 {
-                    //printf("sendrawtransaction.(%s)\n",retstr);
-                    if ( is_hexstr(retstr,0) == sizeof(txid)*2 )
+                    decode_hex(txid.bytes,sizeof(txid),retstr);
+                    if ( bits256_cmp(txid,signedtxid) == 0 )
                     {
-                        decode_hex(txid.bytes,sizeof(txid),retstr);
-                        if ( bits256_cmp(txid,signedtxid) == 0 )
+                        if ( src_or_dest != 0 )
                         {
-                            if ( src_or_dest != 0 )
+                            bp->desttxid = txid;
+                            dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bestk,bestmask,myind,DPOW_SIGCHANNEL,0,numratified != 0);
+                            
+                        } else 
+                        {
+                            bp->srctxid = txid;
+                        }
+                        len = (int32_t)strlen(bp->signedtx) >> 1;
+                        decode_hex(txdata+32,len,bp->signedtx);
+                        for (j=0; j<sizeof(srchash); j++)
+                            txdata[j] = txid.bytes[j];
+                        state = src_or_dest != 0 ? 1000 : 0xffffffff;
+                        if ( bp->state < state )
+                        {
+                            bp->state = state;
+                            dpow_send(myinfo,dp,bp,txid,bp->hashmsg,(src_or_dest != 0) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32);
+                            printf("complete statemachine.%s ht.%d state.%d (%x %x)\n",coin->symbol,bp->height,bp->state,bp->hashmsg.uints[0],txid.uints[0]);
+                            if ( src_or_dest == 0 )
                             {
-                                bp->desttxid = txid;
-                                dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bestk,bestmask,myind,DPOW_SIGCHANNEL,0,numratified != 0);
-                                
-                            } else 
-                            {
-                                bp->srctxid = txid;
+                                dp->lastnotarized = bp->hashmsg;
+                                dp->lastrecvmask = bp->recvmask;
+                                dp->prevDESTHEIGHT = bp->pendingprevDESTHT;
+                                dp->previous = dp->last;
+                                dp->prevnotatxid = bp->desttxid;
+                                dp->bestks[dp->numbestks] = bp->bestk;
+                                dp->numbestks = (dp->numbestks==64 ? 0 : dp->numbestks+1);
                             }
-                            len = (int32_t)strlen(bp->signedtx) >> 1;
-                            decode_hex(txdata+32,len,bp->signedtx);
-                            for (j=0; j<sizeof(srchash); j++)
-                                txdata[j] = txid.bytes[j];
-                            state = src_or_dest != 0 ? 1000 : 0xffffffff;
-                            if ( bp->state < state )
-                            {
-                                bp->state = state;
-                                dpow_send(myinfo,dp,bp,txid,bp->hashmsg,(src_or_dest != 0) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32);
-                                printf("complete statemachine.%s ht.%d state.%d (%x %x)\n",coin->symbol,bp->height,bp->state,bp->hashmsg.uints[0],txid.uints[0]);
-                                if ( src_or_dest == 0 )
-                                {
-                                    dp->lastnotarized = bp->hashmsg;
-                                    dp->lastrecvmask = bp->recvmask;
-                                    dp->prevDESTHEIGHT = bp->pendingprevDESTHT;
-                                    dp->previous = dp->last;
-                                    dp->prevnotatxid = bp->desttxid;
-                                    dp->bestks[dp->numbestks] = bp->bestk;
-                                    dp->numbestks = (dp->numbestks==64 ? 0 : dp->numbestks+1);
-                                }
-                            }
-                        } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,signedtxid));
-                    }
-                    else
+                        }
+                    } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,signedtxid));
+                }
+            } else printf("NULL return from sendrawtransaction. abort\n");
+            
+             // as long as the tx isnt already confirmed, check its inputs
+            if ( errorcode < 0 && errorcode != -27 )
+            {
+                // for non sapling coins/utxos we need a diffrent notary count/sigcheck
+                if ( coin->sapling != 0 && (testbestmask= iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 0)) != bestmask )
+                {
+                    uint64_t failedmask = bp->bestmask^testbestmask;
+                    printf(RED"dpow_sigscheck: [src.%s ht.%i] coin.%s failedbestmask.%llx bestmask.%llx\n"RESET,bp->srccoin->symbol,bp->height,coin->symbol,(long long)failedbestmask,(long long)bp->bestmask);
+                    if ( failedbestmask == 0 )
                     {
-                        // If this fails its because a node has used a spent utxo.
-                        // This should never happen because it checks the utxos are unspent in dpow_notarize_update.
-                        buflen = sprintf(printstr,RED"dpow_sigscheck: [src.%s ht.%i] inputs spent: \n",bp->srccoin->symbol,bp->height);
+                        // the tx has failed for every vin. This is likley detecting a bug. 
+                        // check if the tx was signed by nodes not in the bestmask
+                        buflen += sprintf(printstr+buflen,">>> tx.%s\n",bp->srccoin->symbol,bp->height,coin->symbol,bp->signedtx);
+                        uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1);
+                        buflen += sprintf(printstr+buflen,">>> signed: ");
+                        for (i=0; i<bp->numnotaries; i++)
+                            if ( ((1LL << i) & testmask) != 0 )
+                                buflen += sprintf(printstr+buflen,"%s, ",Notaries_elected[i][0]);
+                        buflen += sprintf(printstr+buflen,"\n bestmask: ");
+                        for (i=0; i<bp->numnotaries; i++)
+                            if ( ((1LL << i) & bp->bestmask) != 0 )
+                                buflen += sprintf(printstr+buflen,"%s, ",Notaries_elected[i][0]);
+                        buflen += sprintf(printstr+buflen,"\n");
+                    }
+                    else 
+                    {
+                        // some node/s signed incorrectly
+                        buflen += sprintf(printstr+buflen,">>> failed sigs: ");
                         for (j=0; j<bp->numnotaries; j++)
-                        {
-                            if ( ((1LL << j) & bp->bestmask) != 0 )
+                            if ( (maskdiff & (1LL << j)) != 0 )
                             {
-                                if ( src_or_dest != 0 )
-                                {
-                                    if ( dpow_gettxout(myinfo, bp->destcoin, bp->notaries[j].dest.prev_hash, bp->notaries[j].dest.prev_vout) == 0 ) 
-                                        buflen += sprintf(printstr+buflen,"    [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].dest.prev_hash), bp->notaries[j].dest.prev_vout);
-                                }
-                                else 
-                                {
-                                    if ( dpow_gettxout(myinfo, bp->srccoin, bp->notaries[j].src.prev_hash, bp->notaries[j].src.prev_vout) == 0 ) 
-                                        buflen += sprintf(printstr+buflen,"    [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].src.prev_hash), bp->notaries[j].src.prev_vout);
-                                }
+                                buflen += sprintf(printstr+buflen,"%s, ", Notaries_elected[j][0]);
+                                // disable the ban for now. 
+                                //dp->lastbanheight[j] = bp->height;
                             }
-                        }
-                        printf("%s \n"RESET,printstr);
-#ifdef LOGTX
-                        FILE * fptr;
-                        fptr = fopen("failed_notarizations_spentinputs", "a+");
-                        fprintf(fptr, "%s\n",printstr);
-                        fclose(fptr);
-#endif  
-                        bp->state = 0xffffffff;
+                        buflen += sprintf(printstr+buflen,"\n");
                     }
-                    free(retstr);
-                    retstr = 0;
                 }
-                else
+                buflen += sprintf(printstr+buflen,">>> inputs spent: \n");
+                for (j=0; j<bp->numnotaries; j++)
                 {
-                    printf("NULL return from sendrawtransaction. abort\n");
-                    bp->state = 0xffffffff;
+                    if ( ((1LL << j) & bp->bestmask) != 0 )
+                    {
+                        if ( src_or_dest != 0 )
+                            if ( dpow_gettxout(myinfo, bp->destcoin, bp->notaries[j].dest.prev_hash, bp->notaries[j].dest.prev_vout) == 0 ) 
+                                buflen += sprintf(printstr+buflen,"     [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].dest.prev_hash), bp->notaries[j].dest.prev_vout);
+                        else
+                            if ( dpow_gettxout(myinfo, bp->srccoin, bp->notaries[j].src.prev_hash, bp->notaries[j].src.prev_vout) == 0 ) 
+                                buflen += sprintf(printstr+buflen,"     [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].src.prev_hash), bp->notaries[j].src.prev_vout);
+                    }
                 }
-            } 
-            else 
-            {
-                /*
-                  here we catch the situation where a notary is either acting maliciously by submitting the wrong sigs for their selected utxo, or some bug or attack has caused the vouts to get mixed up.. 
-                  all nodes that are online will 100% agree which signitures are false. 
-                  we can temporarily skip them from the next round. This means at worst a malicious node can only break every second notarization. 
-                */
-                uint64_t maskdiff = bp->bestmask^failedbestmask;
-                printf(RED"dpow_sigscheck: [src.%s ht.%i] failedbestmask.%llx bestmask.%llx maskdiff.%llx\n"RESET,bp->srccoin->symbol,bp->height,(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
-                if ( failedbestmask == 0 )
-                {
-                    // the tx has failed for every notary, we cannot ban them all. This is likley detecting a bug rather than a malicious node.
-                    // check if the tx was signed by nodes not in the bestmask. 
-                    buflen = sprintf(printstr,"[src.%s ht.%i] coin.%s tx.%s \n",bp->srccoin->symbol,bp->height,coin->symbol,bp->signedtx);
-                    uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1);
-                    buflen += sprintf(printstr+buflen,"nodes signed: ");
-                    for (i=0; i<bp->numnotaries; i++)
-                        if ( ((1LL << i) & testmask) != 0 )
-                            buflen += sprintf(printstr+buflen,"%i, ",i);
-                    buflen += sprintf(printstr+buflen," vs nodes in bestmask: ");
-                    for (i=0; i<bp->numnotaries; i++)
-                        if ( ((1LL << i) & bp->bestmask) != 0 )
-                            buflen += sprintf(printstr+buflen,"%i, ",i);
-                    printf("%s\n",printstr);
 #ifdef LOGTX
-                    FILE * fptr;
-                    fptr = fopen("failed_notarizations_sigcheck", "a+");
-                    fprintf(fptr, "%s\n",printstr);
-                    fclose(fptr);
-#endif        
-                }
-                else 
-                {
-                    // some node/s signed incorrectly..
-                    for (j=0; j<bp->numnotaries; j++)
-                        if ( (maskdiff & (1LL << j)) != 0 )
-                        {
-                            printf(RED"[%s] has submitted incorrect sig, ban them from the next round\n"RESET, Notaries_elected[j][0]);
-                            dp->lastbanheight[j] = bp->height;
-                        }
-                }
-                bp->state = 0xffffffff;
+                FILE * fptr;
+                fptr = fopen("failed_notarizations", "a+");
+                fprintf(fptr, "%s",printstr);
+                fclose(fptr);
+#endif 
+                printf("%s",printstr);
             }
+            bp->state = 0xffffffff;
         } //else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
     }
 }
