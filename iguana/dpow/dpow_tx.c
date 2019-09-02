@@ -752,7 +752,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                   all nodes that are online will 100% agree which signitures are false. 
                   we can temporarily skip them from the next round. This means at worst a malicious node can only break every second notarization. 
                 */
-                printf(RED""dpow_sigscheck: [src.%s ht.%i] failedbestmask.%llx bestmask.%llx maskdiff.%llx\n"RESET,bp->srccoin->symbol,bp->height,(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
+                printf(RED"dpow_sigscheck: [src.%s ht.%i] failedbestmask.%llx bestmask.%llx maskdiff.%llx\n"RESET,bp->srccoin->symbol,bp->height,(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
                 if ( failedbestmask == 0 )
                 {
                     // the tx has failed for every notary, we cannot ban them all. This is likley detecting a bug rather than a malicious node.
