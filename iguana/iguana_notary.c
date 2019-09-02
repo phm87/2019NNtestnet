@@ -90,10 +90,10 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         if ( (supressfreq= (is_STAKED(dp->symbol))) == 0 )
             supressfreq = DPOW_CHECKPOINTFREQ;
 #endif
-        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq )
+        if ( dp->DESTHEIGHT < dp->prevDESTHEIGHT+supressfreq ) //dp->freq < 5 && // this should be used, for coins with a freq set! 
         {
             suppress = 1;
-            printf(YELLOW"suppress %s -> KMD.%i more blocks\n"RESET,dp->symbol,dp->prevDESTHEIGHT+supressfreq-dp->DESTHEIGHT);
+            printf(YELLOW"[%s:%i] suppress %i more KMD blocks\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->prevDESTHEIGHT+supressfreq-dp->DESTHEIGHT);
         }
     }
     /*if ( strcmp(dp->dest,"KMD") == 0 )//|| strcmp(dp->dest,"CHAIN") == 0 )
@@ -143,6 +143,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( suppress == 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % dp->freq) == 0 )
     {
         //dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
+        dp->prevDESTHEIGHT = dp->prevDESTHEIGHT == 0 ? 0 : dp->DESTHEIGHT;
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
@@ -620,7 +621,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][65] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL", "PIRATE", "MGNX", "PGT", "KMDICE", "DION", "KSB", "OUR", "ILN", "RICK", "MORTY", "VOTE2019", "HUSH3", "KOIN", "ZEXO", "K64"
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUICASH", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "NINJA", "OOT", "CHAIN", "BNTN", "PRLPAY", "DSEC", "GLXT", "EQL", "ZILLA", "RFOX", "SEC", "CCL", "PIRATE", "MGNX", "PGT", "KMDICE", "DION", "KSB", "OUR", "ILN", "RICK", "MORTY", "VOTE2019", "HUSH3", "KOIN", "ZEXO", "K64"
 };
 
 // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
