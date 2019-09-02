@@ -752,19 +752,20 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                   all nodes that are online will 100% agree which signitures are false. 
                   we can temporarily skip them from the next round. This means at worst a malicious node can only break every second notarization. 
                 */
+                uint64_t maskdiff = bp->bestmask^failedbestmask;
                 printf(RED"dpow_sigscheck: [src.%s ht.%i] failedbestmask.%llx bestmask.%llx maskdiff.%llx\n"RESET,bp->srccoin->symbol,bp->height,(long long)failedbestmask, (long long)bp->bestmask, (long long)maskdiff );
                 if ( failedbestmask == 0 )
                 {
                     // the tx has failed for every notary, we cannot ban them all. This is likley detecting a bug rather than a malicious node.
                     // check if the tx was signed by nodes not int he bestmask. 
                     char printstr[65536];
-                    sprintf(printstr,"[src.%s ht.%i] coin.%s tx.%s\n",bp->srccoin->symbol,bp->height,coin->symbol,bp->signedtx);
+                    sprintf(printstr,"[src.%s ht.%i] coin.%s tx.%s \n",bp->srccoin->symbol,bp->height,coin->symbol,bp->signedtx);
                     uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1));
-                    sprintf(printstr,"nodes signed:");
+                    sprintf(printstr,"nodes signed: ");
                     for (i=0; i<bp->numnotaries; i++)
                         if ( ((1LL << i) & testmask) != 0 )
                             sprintf(printstr,"%i, ",i);
-                    sprintf(printstr," vs nodes in bestmask:");
+                    sprintf(printstr," vs nodes in bestmask: ");
                     for (i=0; i<bp->numnotaries; i++)
                         if ( ((1LL << i) & bp->bestmask) != 0 )
                             sprintf(printstr,"%i, ",i);
@@ -779,7 +780,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 else 
                 {
                     // some node/s signed incorrectly..
-                    uint64_t maskdiff = bp->bestmask^failedbestmask;
                     for (j=0; j<bp->numnotaries; j++)
                         if ( (maskdiff & (1LL << j)) != 0 )
                         {
