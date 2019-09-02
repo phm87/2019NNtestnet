@@ -1195,7 +1195,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
 
 int32_t iguana_checkwallet(struct supernet_info *myinfo, struct iguana_info *coin)
 {
-    int32_t vout; uint32_t i,n,spents=0; bits256 txid; cJSON *unspents,*item; char str[65];
+    int32_t vout; uint32_t i,n,spents=0; bits256 txid; cJSON *unspents,*item; char str[65]; uint64_t satoshis;
     if ( (unspents= dpow_listunspent(myinfo,coin,0,0)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(unspents)) > 0 )
@@ -1206,14 +1206,20 @@ int32_t iguana_checkwallet(struct supernet_info *myinfo, struct iguana_info *coi
                     continue;
                 if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
                     continue;
-                txid = jbits256(item,"txid");
-                vout = jint(item,"vout");
-                if ( bits256_nonz(txid) != 0 && vout >= 0 )
+                // only check unspents we care about
+                if ( (satoshis= SATOSHIDEN * jdouble(item,"amount")) == 0 )
+                    satoshis= SATOSHIDEN * jdouble(item,"value");
+                if ( satoshis == DPOW_UTXOSIZE )
                 {
-                    if ( dpow_gettxout(myinfo, coin, txid, vout) == 0 )
+                    txid = jbits256(item,"txid");
+                    vout = jint(item,"vout");
+                    if ( bits256_nonz(txid) != 0 && vout >= 0 )
                     {
-                        printf("[%s] : txid.(%s) vout.(%d) is spent!\n",coin->symbol, bits256_str(str,txid), vout);
-                        spents++;
+                        if ( dpow_gettxout(myinfo, coin, txid, vout) == 0 )
+                        {
+                            printf("[%s] : txid.(%s) vout.(%d) is spent!\n",coin->symbol, bits256_str(str,txid), vout);
+                            spents++;
+                        }
                     }
                 }
             }
