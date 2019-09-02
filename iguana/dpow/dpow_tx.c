@@ -658,7 +658,7 @@ uint64_t iguana_fastnotariescount(struct supernet_info *myinfo, struct dpow_info
 
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified)
 {
-    bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t i,j,len,numsigs,buflen = 0;; char *retstr=0,str[65],str2[65],printstr[65536]; uint8_t txdata[32768]; uint32_t channel,state; uint64_t failedbestmask;
+    bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t i,j,len,numsigs,buflen; char *retstr=0,str[65],str2[65],printstr[65536]; uint8_t txdata[32768]; uint32_t channel,state; uint64_t failedbestmask;
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     memset(zero.bytes,0,sizeof(zero));
     memset(txid.bytes,0,sizeof(txid));
@@ -716,7 +716,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                     {
                         // If this fails its because a node has used a spent utxo.
                         // This should never happen because it checks the utxos are unspent in dpow_notarize_update.
-                        buflen += sprintf(printstr[buflen],RED"dpow_sigscheck: [src.%s ht.%i] inputs spent: \n",bp->srccoin->symbol,bp->height);
+                        buflen = sprintf(printstr,RED"dpow_sigscheck: [src.%s ht.%i] inputs spent: \n",bp->srccoin->symbol,bp->height);
                         for (j=0; j<bp->numnotaries; j++)
                         {
                             if ( ((1LL << j) & bp->bestmask) != 0 )
@@ -724,12 +724,12 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                                 if ( src_or_dest != 0 )
                                 {
                                     if ( dpow_gettxout(myinfo, bp->destcoin, bp->notaries[j].dest.prev_hash, bp->notaries[j].dest.prev_vout) == 0 ) 
-                                        buflen += sprintf(printstr[buflen],"    [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].dest.prev_hash), bp->notaries[j].dest.prev_vout);
+                                        buflen += sprintf(printstr+buflen,"    [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].dest.prev_hash), bp->notaries[j].dest.prev_vout);
                                 }
                                 else 
                                 {
                                     if ( dpow_gettxout(myinfo, bp->srccoin, bp->notaries[j].src.prev_hash, bp->notaries[j].src.prev_vout) == 0 ) 
-                                        buflen += sprintf(printstr[buflen],"    [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].src.prev_hash), bp->notaries[j].src.prev_vout);
+                                        buflen += sprintf(printstr+buflen,"    [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].src.prev_hash), bp->notaries[j].src.prev_vout);
                                 }
                             }
                         }
@@ -763,17 +763,17 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 if ( failedbestmask == 0 )
                 {
                     // the tx has failed for every notary, we cannot ban them all. This is likley detecting a bug rather than a malicious node.
-                    // check if the tx was signed by nodes not int he bestmask. 
-                    buflen += sprintf(printstr[buflen],"[src.%s ht.%i] coin.%s tx.%s \n",bp->srccoin->symbol,bp->height,coin->symbol,bp->signedtx);
+                    // check if the tx was signed by nodes not in the bestmask. 
+                    buflen = sprintf(printstr,"[src.%s ht.%i] coin.%s tx.%s \n",bp->srccoin->symbol,bp->height,coin->symbol,bp->signedtx);
                     uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1);
-                    buflen += sprintf(printstr[buflen],"nodes signed: ");
+                    buflen += sprintf(printstr+buflen,"nodes signed: ");
                     for (i=0; i<bp->numnotaries; i++)
                         if ( ((1LL << i) & testmask) != 0 )
                             buflen += sprintf(printstr[buflen],"%i, ",i);
-                    printstr += sprintf(printstr," vs nodes in bestmask: ");
+                    buflen += sprintf(printstr+buflen," vs nodes in bestmask: ");
                     for (i=0; i<bp->numnotaries; i++)
                         if ( ((1LL << i) & bp->bestmask) != 0 )
-                            buflen += sprintf(printstr[buflen],"%i, ",i);
+                            buflen += sprintf(printstr+buflen,"%i, ",i);
                     printf("%s\n",printstr);
 #ifdef LOGTX
                     FILE * fptr;
