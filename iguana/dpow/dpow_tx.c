@@ -760,7 +760,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                     // check if the tx was signed by nodes not int he bestmask. 
                     char printstr[65536];
                     sprintf(printstr,"[src.%s ht.%i] coin.%s tx.%s \n",bp->srccoin->symbol,bp->height,coin->symbol,bp->signedtx);
-                    uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1));
+                    uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1);
                     sprintf(printstr,"nodes signed: ");
                     for (i=0; i<bp->numnotaries; i++)
                         if ( ((1LL << i) & testmask) != 0 )
