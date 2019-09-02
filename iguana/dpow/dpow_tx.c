@@ -769,7 +769,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                     buflen += sprintf(printstr+buflen,"nodes signed: ");
                     for (i=0; i<bp->numnotaries; i++)
                         if ( ((1LL << i) & testmask) != 0 )
-                            buflen += sprintf(printstr[buflen],"%i, ",i);
+                            buflen += sprintf(printstr+buflen,"%i, ",i);
                     buflen += sprintf(printstr+buflen," vs nodes in bestmask: ");
                     for (i=0; i<bp->numnotaries; i++)
                         if ( ((1LL << i) & bp->bestmask) != 0 )
