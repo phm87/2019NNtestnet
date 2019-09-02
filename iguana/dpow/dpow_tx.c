@@ -670,7 +670,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs ) 
         {
-            if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx,(bestmask & (1LL << bp->myind),) != 0),&errorcode) != 0 )
+            if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx,(bestmask & (1LL << bp->myind)),&errorcode)) != 0 )
             {
                 //printf("sendrawtransaction.(%s)\n",retstr);
                 if ( is_hexstr(retstr,0) == sizeof(txid)*2 )
@@ -719,12 +719,12 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 if ( coin->sapling != 0 && (testbestmask= iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 0)) != bestmask )
                 {
                     uint64_t failedmask = bp->bestmask^testbestmask;
-                    printf(RED"dpow_sigscheck: [src.%s ht.%i] coin.%s failedbestmask.%llx bestmask.%llx\n"RESET,bp->srccoin->symbol,bp->height,coin->symbol,(long long)failedbestmask,(long long)bp->bestmask);
-                    if ( failedbestmask == 0 )
+                    printf(RED"dpow_sigscheck: [%s:%i] coin.%s failedbestmask.%llx bestmask.%llx\n"RESET,bp->srccoin->symbol,bp->height,coin->symbol,(long long)failedmask,(long long)bestmask);
+                    if ( failedmask == 0 )
                     {
                         // the tx has failed for every vin. This is likley detecting a bug. 
                         // check if the tx was signed by nodes not in the bestmask
-                        buflen += sprintf(printstr+buflen,">>> tx.%s\n",bp->srccoin->symbol,bp->height,coin->symbol,bp->signedtx);
+                        buflen += sprintf(printstr+buflen,">>> tx.%s\n",bp->signedtx);
                         uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1);
                         buflen += sprintf(printstr+buflen,">>> signed: ");
                         for (i=0; i<bp->numnotaries; i++)
@@ -741,7 +741,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         // some node/s signed incorrectly
                         buflen += sprintf(printstr+buflen,">>> failed sigs: ");
                         for (j=0; j<bp->numnotaries; j++)
-                            if ( (maskdiff & (1LL << j)) != 0 )
+                            if ( (failedmask & (1LL << j)) != 0 )
                             {
                                 buflen += sprintf(printstr+buflen,"%s, ", Notaries_elected[j][0]);
                                 // disable the ban for now. 
@@ -756,11 +756,15 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                     if ( ((1LL << j) & bp->bestmask) != 0 )
                     {
                         if ( src_or_dest != 0 )
+                        {
                             if ( dpow_gettxout(myinfo, bp->destcoin, bp->notaries[j].dest.prev_hash, bp->notaries[j].dest.prev_vout) == 0 ) 
                                 buflen += sprintf(printstr+buflen,"     [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].dest.prev_hash), bp->notaries[j].dest.prev_vout);
+                        }
                         else
+                        {
                             if ( dpow_gettxout(myinfo, bp->srccoin, bp->notaries[j].src.prev_hash, bp->notaries[j].src.prev_vout) == 0 ) 
                                 buflen += sprintf(printstr+buflen,"     [%s] txid.%s v.%i \n", Notaries_elected[j][0],bits256_str(str,bp->notaries[j].src.prev_hash), bp->notaries[j].src.prev_vout);
+                        }
                     }
                 }
 #ifdef LOGTX
@@ -770,8 +774,8 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 fclose(fptr);
 #endif 
                 printf("%s",printstr);
+                bp->state = 0xffffffff;
             }
-            bp->state = 0xffffffff;
         } //else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
     }
 }

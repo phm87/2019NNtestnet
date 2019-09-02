@@ -1121,6 +1121,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     } else coin->MAXPEERS = 0;
     coin->notarychain = iguana_isnotarychain(coin->symbol);
     coin->myservices = services;
+    coin->utxocacheactive = coin->utxocacheinit = 0;
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
     coin->protocol = IGUANA_PROTOCOL_BITCOIN;
