@@ -266,7 +266,7 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,numratified=0,kmdheight,myind = -1,blockindex=0; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
+    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,start_destht,numratified=0,kmdheight = -1,myind = -1,blockindex=0; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
     char *destlockunspent=0,*srclockunspent=0,*destunlockunspent=0,*srcunlockunspent=0;
     memset(&zero,0,sizeof(zero));
     portable_mutex_t dpowT_mutex;
@@ -279,7 +279,6 @@ void dpow_statemachinestart(void *ptr)
     minsigs = (uint32_t)(long)ptrs[2];
     duration = (uint32_t)(long)ptrs[3];
     jsonstr = ptrs[4];
-    kmdheight = -1;
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
@@ -312,7 +311,7 @@ void dpow_statemachinestart(void *ptr)
         dp->blocks[blockindex] = bp;
         portable_mutex_unlock(&dpowT_mutex);
         //printf("blockindex.%i allocate bp for %s ht.%d -> %s\n",blockindex,src->symbol,checkpoint.blockhash.height,dest->symbol);
-        bp->pendingprevDESTHT = dp->DESTHEIGHT;
+        bp->pendingprevDESTHT = start_destht = dp->DESTHEIGHT;
         bp->MoM = MoM;
         bp->MoMdepth = MoMdepth;
         bp->CCid = dp->fullCCid & 0xffff;
@@ -610,10 +609,10 @@ void dpow_statemachinestart(void *ptr)
             extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
-        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
+        if  ( dp->prevDESTHEIGHT > start_destht )  // ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
         {
-            // leave thread running if there is no kmd height saved yet. 
-            if ( bp->isratify == 0 && dp->prevDESTHEIGHT != 0 )
+            // abort if a notarization for a block higher than this is notarized
+            if ( bp->isratify == 0 )
             {
                 printf(MAGENTA"abort %s ht.%d due to new checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
                 break;

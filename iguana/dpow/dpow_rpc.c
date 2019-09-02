@@ -624,7 +624,7 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
 
 cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t utxosize)
 {
-    char buf[128], buf2[128],*retstr; cJSON *array,*json = 0;
+    char buf[128], buf2[128],*retstr=0; cJSON *array,*json = 0;
     if ( coin->active == 0 ) return (0);
     if ( coin->FULLNODE < 0 )
     {
@@ -634,8 +634,14 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
             sprintf(buf,"%i, \"%s\"", utxosize, coinaddr);
         sprintf(buf2,"1, 99999999, [\"%s\"]",coinaddr);
         
+        if ( coin->utxocacheactive == 0 && coin->utxocacheinit < 3 && utxosize != 0 && (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"dpowlistunspent", buf)) != 0 )
+        {
+            coin->utxocacheinit++;
+            coin->utxocacheactive = 1;
+        }
+        
         //fprintf(stderr, "buf.%s buf2.%s\n",buf, buf2);
-        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass, utxosize != 0 ? "dpowlistunspent" : "listunspent", buf)) != 0 )
+        if ( retstr != 0 || (coin->utxocacheactive != 0 && (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass, "dpowlistunspent", buf)) != 0) )
         {
             json = cJSON_Parse(retstr);
             //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
@@ -1017,7 +1023,7 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *merklerootp,bits2
                 coin->lastbestheight = height;
                 if ( height > coin->longestchain )
                     coin->longestchain = height;
-                if ( 0 && txs != 0 && numtxp != 0 && (array= jarray(&n,json,"tx")) != 0 )
+                if ( txs != 0 && numtxp != 0 && (array= jarray(&n,json,"tx")) != 0 )
                 {
                     for (i=0; i<n&&i<maxtx; i++)
                         txs[i] = jbits256i(array,i);
