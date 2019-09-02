@@ -1193,6 +1193,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     return(coin);
 }
 
+extern uint64_t dpow_utxosize(char *symbol);
+
 int32_t iguana_checkwallet(struct supernet_info *myinfo, struct iguana_info *coin)
 {
     int32_t vout; uint32_t i,n,spents=0; bits256 txid; cJSON *unspents,*item; char str[65]; uint64_t satoshis;
