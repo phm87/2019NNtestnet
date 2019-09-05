@@ -302,7 +302,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         else if ( strcmp(chain->symbol,"BTC") == 0 )
             chain->pubtype = 0, chain->p2shtype = 5, chain->portp2p = 8333, chain->rpcport = 8332;
 	else if ( strcmp(chain->symbol,"tBCH") == 0 )
-+            chain->pubtype = 111, chain->p2shtype = 239, chain->portp2p = 18333, chain->rpcport = 18332, chain->wiftype = 111,decode_hex((uint8_t *)chain->netmagic,4,"f4e5f3f4");
+            chain->pubtype = 111, chain->p2shtype = 239, chain->portp2p = 18333, chain->rpcport = 18332, chain->wiftype = 111,decode_hex((uint8_t *)chain->netmagic,4,"f4e5f3f4");
         else chain->do_opreturn = juint(argjson,"do_opreturn");
         if ( (chain->minoutput= j64bits(argjson,"minoutput")) == 0 )
             chain->minoutput = 10000;
