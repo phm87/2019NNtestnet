@@ -117,6 +117,7 @@ char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,
         //if ( strcmp(checkaddr,coinaddr) != 0 )
         //    printf("checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
     }
+    printf("[phm87] coinaddr %s\n",coinaddr);
     return(coinaddr);
 }
 
