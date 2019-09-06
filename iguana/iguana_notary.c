@@ -66,6 +66,8 @@ int8_t is_STAKED(const char *chain_name)
         return(0);
     if ( (strcmp(chain_name, "LABS") == 0) || (strncmp(chain_name, "LABS", 4) == 0) )
         ret = 3; // These chains are allowed coin emissions.
+    else if ( (strncmp(chain_name, "CFEKOD", 6) == 0) ) // temp for testing KMD on demand chains
+        ret = DPOW_CHECKPOINTFREQ;
     else if ( (strcmp(chain_name, "CFEK") == 0) || (strncmp(chain_name, "CFEK", 4) == 0) )
         ret = 2; // These chains have no speical rules at all.
     else if ( (strcmp(chain_name, "TEST") == 0) || (strncmp(chain_name, "TEST", 4) == 0) )

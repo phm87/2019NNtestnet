@@ -712,14 +712,15 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 }
             } else printf("NULL return from sendrawtransaction. abort\n");
             
-             // as long as the tx isnt already confirmed, check its inputs
-            if ( errorcode < 0 && errorcode != -27 )
+            // as long as the tx isnt already confirmed, check its inputs
+            if ( errorcode != 0 ) //&& errorcode != -27
             {
+                printf(RED"dpow_sigscheck: [%s:%i] coin.%s errcode.%i sapling.%i "RESET,coin->sapling,errorcode,bp->srccoin->symbol,bp->height,coin->symbol,(long long)failedmask,(long long)bp->bestmask);
                 // for non sapling coins/utxos we need a diffrent notary count/sigcheck
-                if ( coin->sapling != 0 && (testbestmask= iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 0)) != bestmask )
+                if ( coin->sapling != 0 && (testbestmask= iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 0)) != bp->bestmask )
                 {
                     uint64_t failedmask = bp->bestmask^testbestmask;
-                    printf(RED"dpow_sigscheck: [%s:%i] coin.%s failedbestmask.%llx bestmask.%llx\n"RESET,bp->srccoin->symbol,bp->height,coin->symbol,(long long)failedmask,(long long)bestmask);
+                    printf(RED"failedbestmask.%llx bestmask.%llx\n"RESET,(long long)failedmask,(long long)bestmask);
                     if ( failedmask == 0 )
                     {
                         // the tx has failed for every vin. This is likley detecting a bug. 
