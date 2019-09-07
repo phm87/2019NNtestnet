@@ -1,7 +1,7 @@
 {
 "port": 17780,
-"BTCminsigs": 1,
-"minsigs": 1,
+"BTCminsigs": 13,
+"minsigs": 3,
 "seeds": [
 	"103.6.12.117",
 	"185.137.233.199",
