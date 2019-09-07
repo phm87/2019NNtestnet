@@ -22,8 +22,8 @@
 
 #define DPOW_MAXFREQ 100
 #define DPOW_CHECKPOINTFREQ 10
-#define DPOW_MINSIGS 1
-#define DPOW_MIN_ASSETCHAIN_SIGS 1
+#define DPOW_MINSIGS 13
+#define DPOW_MIN_ASSETCHAIN_SIGS 3
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset,freq) (((((bp)->height / freq) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
 #define DPOW_VERSION 0x1782
