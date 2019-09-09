@@ -141,7 +141,7 @@ struct pax_transaction
 struct dpow_info
 {
     char symbol[16],dest[16]; uint8_t minerkey33[33],minerid; int8_t bestks[64],numbestks; uint64_t lastrecvmask;
-    struct dpow_checkpoint checkpoint,last,previous,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
+    struct dpow_checkpoint checkpoint,last,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 activehash,lastnotarized,srctx[DPOW_MAXTX],desttx[DPOW_MAXTX],prevnotatxid;
     uint32_t SRCREALTIME,lastsrcupdate,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
