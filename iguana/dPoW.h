@@ -145,7 +145,7 @@ struct dpow_info
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 activehash,lastnotarized,srctx[DPOW_MAXTX],desttx[DPOW_MAXTX],prevnotatxid;
     uint32_t SRCREALTIME,lastsrcupdate,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
-    int32_t lastheight,maxblocks,SRCHEIGHT,DESTHEIGHT,prevDESTHEIGHT,SHORTFLAG,ratifying,minsigs,freq,lastbanheight[DPOW_MAXRELAYS];
+    int32_t lastheight,maxblocks,SRCHEIGHT,DESTHEIGHT,prevDESTHEIGHT,SHORTFLAG,ratifying,minsigs,freq,lastbanheight[DPOW_MAXRELAYS],lastnotarizedht;
     struct pax_transaction *PAX;
     uint32_t fullCCid;
     portable_mutex_t paxmutex,dexmutex,dpmutex;

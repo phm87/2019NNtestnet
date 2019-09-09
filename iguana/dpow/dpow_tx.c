@@ -701,7 +701,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                             {
                                 portable_mutex_lock(&dp->dpmutex);
                                 dp->lastnotarized = bp->hashmsg;
-                                dp->previousnotaht = bp->height;
+                                dp->lastnotarizedht = bp->height;
                                 dp->lastrecvmask = bp->recvmask;
                                 dp->prevDESTHEIGHT = bp->pendingprevDESTHT;
                                 dp->prevnotatxid = bp->desttxid;
