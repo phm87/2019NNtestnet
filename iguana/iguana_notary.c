@@ -362,6 +362,7 @@ THREE_STRINGS_AND_DOUBLE(iguana,dpow,symbol,dest,pubkey,freq)
         return(clonestr("{\"error\":\"dPoW cant allocate memory\"}"));
     memset(dp,0,sizeof(*dp));
     destvalid = srcvalid = 0;
+    portable_mutex_init(&dp->dpmutex);
     if ( myinfo->NOTARY.RELAYID < 0 )
     {
         if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(myinfo->ipaddr),myinfo->myaddr.persistent)) != 0 )

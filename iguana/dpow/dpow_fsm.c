@@ -266,7 +266,7 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,start_destht,numratified=0,kmdheight = -1,myind = -1,blockindex=0; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
+    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,start_destht,numratified=0,kmdheight = -1,myind = -1,blockindex=0,abort=0; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
     char *destlockunspent=0,*srclockunspent=0,*destunlockunspent=0,*srcunlockunspent=0;
     memset(&zero,0,sizeof(zero));
     portable_mutex_t dpowT_mutex;
@@ -609,15 +609,6 @@ void dpow_statemachinestart(void *ptr)
             extralen = dpow_paxpending(myinfo,extras,sizeof(extras),&bp->paxwdcrc,bp->MoM,bp->MoMdepth,bp->CCid,src_or_dest,bp);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
-        if  ( dp->prevDESTHEIGHT > start_destht )  // ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height ) //(checkpoint.blockhash.height % 100) != 0 &&
-        {
-            // abort if a notarization for a block higher than this is notarized
-            if ( bp->isratify == 0 )
-            {
-                printf(MAGENTA"abort %s ht.%d due to new checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
-                break;
-            }
-        }
         if ( dp->ratifying > 1 )
         {
             printf("new ratification started. abort ht.%d\n",bp->height);
@@ -663,8 +654,21 @@ void dpow_statemachinestart(void *ptr)
             printf("abort pending ratify\n");
             break;
         } */
-        sleep(30);
+        //sleep(30);
         iterations++;
+        while ( abort == 0 && starttime+(iterations*30) > (uint32_t)time(NULL) ) 
+        {
+            portable_mutex_lock(&dp->dpmutex);
+            if  ( dp->previous.blockhash.height > checkpoint.blockhash.height && bp->isratify == 0 ) 
+            {
+                printf(MAGENTA"[%s:%d] abort due to confirmed checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->previous.blockhash.height);
+                abort == 1;
+            }
+            portable_mutex_unlock(&dp->dpmutex);
+            usleep(100000);
+        }
+        if ( abort != 0 )
+            break;
     }
     //dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;

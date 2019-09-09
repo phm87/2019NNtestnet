@@ -699,6 +699,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                             printf("complete statemachine.%s ht.%d state.%d (%x %x)\n",coin->symbol,bp->height,bp->state,bp->hashmsg.uints[0],txid.uints[0]);
                             if ( src_or_dest == 0 )
                             {
+                                portable_mutex_lock(&dp->dpmutex);
                                 dp->lastnotarized = bp->hashmsg;
                                 dp->lastrecvmask = bp->recvmask;
                                 dp->prevDESTHEIGHT = bp->pendingprevDESTHT;
@@ -706,6 +707,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                                 dp->prevnotatxid = bp->desttxid;
                                 dp->bestks[dp->numbestks] = bp->bestk;
                                 dp->numbestks = (dp->numbestks==64 ? 0 : dp->numbestks+1);
+                                portable_mutex_unlock(&dp->dpmutex);
                             }
                         }
                     } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,signedtxid));
@@ -715,41 +717,27 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             // as long as the tx isnt already confirmed, check its inputs
             if ( errorcode != 0 ) //&& errorcode != -27
             {
-                printf(RED"dpow_sigscheck: [%s:%i] coin.%s errcode.%i sapling.%i "RESET,bp->srccoin->symbol,bp->height,coin->symbol,errorcode,coin->sapling);
+                buflen = sprintf(printstr, RED"dpow_sigscheck: [%s:%i] coin.%s errcode.%i sapling.%i "RESET,bp->srccoin->symbol,bp->height,coin->symbol,errorcode,coin->sapling);
                 // for non sapling coins/utxos we need a diffrent notary count/sigcheck
                 if ( coin->sapling != 0 && (testbestmask= iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 0)) != bp->bestmask )
                 {
                     uint64_t failedmask = bp->bestmask^testbestmask;
-                    printf(RED"failedbestmask.%llx bestmask.%llx\n"RESET,(long long)failedmask,(long long)bp->bestmask);
-                    if ( failedmask == 0 )
-                    {
-                        // the tx has failed for every vin. This is likley detecting a bug. 
-                        // check if the tx was signed by nodes not in the bestmask
-                        buflen += sprintf(printstr+buflen,">>> tx.%s\n",bp->signedtx);
-                        uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1);
-                        buflen += sprintf(printstr+buflen,">>> signed: ");
-                        for (i=0; i<bp->numnotaries; i++)
-                            if ( ((1LL << i) & testmask) != 0 )
-                                buflen += sprintf(printstr+buflen,"%s, ",Notaries_elected[i][0]);
-                        buflen += sprintf(printstr+buflen,"\n bestmask: ");
-                        for (i=0; i<bp->numnotaries; i++)
-                            if ( ((1LL << i) & bp->bestmask) != 0 )
-                                buflen += sprintf(printstr+buflen,"%s, ",Notaries_elected[i][0]);
-                        buflen += sprintf(printstr+buflen,"\n");
-                    }
-                    else 
-                    {
-                        // some node/s signed incorrectly
-                        buflen += sprintf(printstr+buflen,">>> failed sigs: ");
-                        for (j=0; j<bp->numnotaries; j++)
-                            if ( (failedmask & (1LL << j)) != 0 )
-                            {
-                                buflen += sprintf(printstr+buflen,"%s, ", Notaries_elected[j][0]);
-                                // disable the ban for now. 
-                                //dp->lastbanheight[j] = bp->height;
-                            }
-                        buflen += sprintf(printstr+buflen,"\n");
-                    }
+                    buflen += sprintf(printstr+buflen,RED"failedbestmask.%llx bestmask.%llx\n"RESET,(long long)failedmask,(long long)bp->bestmask);
+                    buflen += sprintf(printstr+buflen,">>> tx.%s\n",bp->signedtx);
+                    uint64_t testmask = iguana_fastnotariescount(myinfo, dp, bp, src_or_dest, 1);
+                    buflen += sprintf(printstr+buflen,">>> signed by: ");
+                    for (i=0; i<bp->numnotaries; i++)
+                        if ( ((1LL << i) & testmask) != 0 )
+                            buflen += sprintf(printstr+buflen,"%s, ",Notaries_elected[i][0]);
+                    buflen += sprintf(printstr+buflen,"\n >>> missing sigs: ");
+                    for (j=0; j<bp->numnotaries; j++)
+                        if ( (failedmask & (1LL << j)) != 0 )
+                        {
+                            buflen += sprintf(printstr+buflen,"%s, ", Notaries_elected[j][0]);
+                            //disable the ban for now. 
+                            //dp->lastbanheight[j] = bp->height;
+                        }
+                    buflen += sprintf(printstr+buflen,"\n");
                 }
                 buflen += sprintf(printstr+buflen,">>> inputs spent: \n");
                 for (j=0; j<bp->numnotaries; j++)

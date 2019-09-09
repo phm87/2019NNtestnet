@@ -148,7 +148,7 @@ struct dpow_info
     int32_t lastheight,maxblocks,SRCHEIGHT,DESTHEIGHT,prevDESTHEIGHT,SHORTFLAG,ratifying,minsigs,freq,lastbanheight[DPOW_MAXRELAYS];
     struct pax_transaction *PAX;
     uint32_t fullCCid;
-    portable_mutex_t paxmutex,dexmutex;
+    portable_mutex_t paxmutex,dexmutex,dpmutex;
     uint32_t ipbits[DPOW_MAXIPBITS],numipbits;
     struct dpow_block **blocks,*currentbp;
 };
