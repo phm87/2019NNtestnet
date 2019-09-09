@@ -626,7 +626,7 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( bp->state != 0xffffffff )
         {
-            printf(YELLOW"[%s:%i] iterations.%i duratinon.%i minnodes.%i vs numnodes.%i\n"RESET,bp->srccoin->symbol,checkpoint.blockhash.height, iterations, (uint32_t)time(NULL)-bp->starttime,bp->minnodes,bitweight(bp-recvmask));
+            printf(YELLOW"[%s:%i] iterations.%i duratinon.%i minnodes.%i vs numnodes.%i\n"RESET,bp->srccoin->symbol,checkpoint.blockhash.height, iterations, (uint32_t)time(NULL)-bp->starttime,bp->minnodes,bitweight(bp->recvmask));
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             dpow_nanomsg_update(myinfo);
             /* 
