@@ -648,16 +648,16 @@ void dpow_statemachinestart(void *ptr)
         while ( abort == 0 && starttime+(iterations*30) > (uint32_t)time(NULL) ) 
         {
             portable_mutex_lock(&dp->dpmutex);
-            if  ( dp->previous.blockhash.height > checkpoint.blockhash.height && bp->isratify == 0 ) 
-            {
-                printf(MAGENTA"[%s:%d] completed checkpoint.%d, abort notarization\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->previous.blockhash.height);
+            if  ( dp->previousnotaht > bp->height && bp->isratify == 0 )
                 abort++;
-            }
             portable_mutex_unlock(&dp->dpmutex);
             usleep(100000);
         }
         if ( abort != 0 )
+        {
+            printf(MAGENTA"[%s:%d] completed checkpoint.%d, abort notarization\n"RESET,dp->symbol,bp->height,dp->previousnotaht);
             break;
+        }
     }
     dp->ratifying -= bp->isratify;
     printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx bitweight(lastrecvmask).%d paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bitweight(dp->lastrecvmask),bp->paxwdcrc,src,dest);

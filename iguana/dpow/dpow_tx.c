@@ -701,9 +701,9 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                             {
                                 portable_mutex_lock(&dp->dpmutex);
                                 dp->lastnotarized = bp->hashmsg;
+                                dp->previousnotaht = bp->height;
                                 dp->lastrecvmask = bp->recvmask;
                                 dp->prevDESTHEIGHT = bp->pendingprevDESTHT;
-                                dp->previous = dp->last;
                                 dp->prevnotatxid = bp->desttxid;
                                 dp->bestks[dp->numbestks] = bp->bestk;
                                 dp->numbestks = (dp->numbestks==64 ? 0 : dp->numbestks+1);
