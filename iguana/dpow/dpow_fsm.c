@@ -628,14 +628,6 @@ void dpow_statemachinestart(void *ptr)
         {
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             dpow_nanomsg_update(myinfo);
-            /* 
-                Each iteration lower the amount of needed nodes in recvmask by 1/8th of the total nodes. 
-                when first launched this will be minsigs because you wont have lastrecvmask. After one notarizaion has passed all nodes online will have the same lastrecvmask. 
-                This gives us an ideal target, the recvmask continues to update for the entire duration and is a consensus value agreed upon by all nodes. 
-                To enter recvmask you must submit utxos, this is why listunspent time makes such a diffrence right now. 
-                With this change there is at least 30s before any nodes try to calcualte the bestmask of who notarizes. Gives ample time for all nodes to commit to the round with a valid utxo. 
-                I usually see 80% of rounds completing at 61-63s duration. Which seems much the same as it is now so it doesnt slow anything down. 
-            */
             if ( iterations > 1 )
             {
                 bp->minnodes -= ((bp->numnotaries+(bp->numnotaries % 2)) / 8);
@@ -648,7 +640,10 @@ void dpow_statemachinestart(void *ptr)
         {
             portable_mutex_lock(&dp->dpmutex);
             if  ( dp->lastnotarizedht > bp->height && bp->isratify == 0 )
+            {
+                bp->state = 0xffffffff;
                 abort++;
+            }
             portable_mutex_unlock(&dp->dpmutex);
             usleep(100000);
         }
@@ -663,10 +658,10 @@ void dpow_statemachinestart(void *ptr)
     printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx bitweight(lastrecvmask).%d paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bitweight(dp->lastrecvmask),bp->paxwdcrc,src,dest);
 end:
     // unlock the dest utxo on KMD.
-    if ( ep != 0 && strcmp("KMD",dest->symbol) == 0  && ep->dest.prev_vout != -1 )
+    if ( ep != 0 && strcmp("KMD",dest->symbol) == 0 && ep->dest.prev_vout != -1 )
       dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
     // unlock the src selected utxo on KMD.
-    if ( ep != 0 && strcmp("KMD",src->symbol) == 0  && ep->src.prev_vout != -1 )
+    if ( ep != 0 && strcmp("KMD",src->symbol) == 0 && ep->src.prev_vout != -1 )
       dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
     portable_mutex_lock(&dpowT_mutex);
     dp->blocks[blockindex] = 0;
