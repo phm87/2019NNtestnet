@@ -650,13 +650,16 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
             free(retstr);
         } else printf("%s null retstr from dpowlistunspent.%s\n",coin->symbol,buf);
         
-        // normal listunspent, fall back. 
-        if ( (json == 0 || cJSON_GetArraySize(json) < 1) && (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf2)) != 0 )
+        // normal listunspent
+        if ( json == 0 || cJSON_GetArraySize(json) == 0 )
         {
-            json = cJSON_Parse(retstr);
-            //printf("listunspent: %s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
-            free(retstr);
-        } else printf("%s null retstr from listunspent.%s\n",coin->symbol,buf2);
+            if (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf2)) != 0 )
+            {
+                json = cJSON_Parse(retstr);
+                //printf("listunspent: %s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
+                free(retstr);
+            } else printf("%s null retstr from listunspent.%s\n",coin->symbol,buf2);
+        }
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
