@@ -662,7 +662,7 @@ void dpow_statemachinestart(void *ptr)
             if  ( dp->previous.blockhash.height > checkpoint.blockhash.height && bp->isratify == 0 ) 
             {
                 printf(MAGENTA"[%s:%d] abort due to confirmed checkpoint.%d\n"RESET,dp->symbol,checkpoint.blockhash.height,dp->previous.blockhash.height);
-                abort == 1;
+                abort++;
             }
             portable_mutex_unlock(&dp->dpmutex);
             usleep(100000);
