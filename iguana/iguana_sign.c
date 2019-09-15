@@ -1916,15 +1916,26 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                 }
                 finalized = iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);
                 //printf("finalized.%d\n",finalized);
-                if ( (complete= bitcoin_verifyvins(coin,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
-                {
-                    int32_t tmp; //char str[65];
-                    if ( (tmp= iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
-                    {
-                        printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
-                        complete = 0;
-                    } //else printf("%s signed\n",bits256_str(str,*signedtxidp));
-                } else printf("complete.%d\n",complete);
+		if ( strcmp("BCH",coin->symbol) == 0 )
+	                if ( (complete= bitcoin_verifyvins(coin,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL|SIGHASH_FORKID,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
+        	        {
+                	    int32_t tmp; //char str[65];
+                 	   	if ( (tmp= iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
+                    		{
+                       			printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
+                        		complete = 0;
+                    		} //else printf("%s signed\n",bits256_str(str,*signedtxidp));
+                	} else printf("complete.%d\n",complete);
+		else
+	                if ( (complete= bitcoin_verifyvins(coin,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
+        	        {
+                	    	int32_t tmp; //char str[65];
+                    		if ( (tmp= iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
+                    		{
+                        		printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
+                        		complete = 0;
+                    		} //else printf("%s signed\n",bits256_str(str,*signedtxidp));
+                	} else printf("complete.%d\n",complete);
             } else printf("rwmsgtx error\n");
         } else fprintf(stderr,"no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
         free(extraspace);
