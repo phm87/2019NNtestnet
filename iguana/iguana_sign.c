@@ -33,6 +33,8 @@ const unsigned char ZCASH_SIG_HASH_SAPLING_PERSONALIZATION[16] =
 const unsigned char ZCASH_SIG_HASH_OVERWINTER_PERSONALIZATION[16] =
 { 'Z','c','a','s','h','S','i','g','H','a','s','h', '\x19', '\x1B', '\xA8', '\x5B' };
 
+#define LP_IS_BITCOINCASH 2
+
 uint64_t amountfromvalue(double value) {
 
 // http://c-faq.com/fp/round.html
@@ -532,11 +534,13 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin, int32_t height, uint8_t *seria
     memcpy(dest.vins,msgtx->vins,dest.tx_in * sizeof(*dest.vins));
     memcpy(dest.vouts,msgtx->vouts,dest.tx_out * sizeof(*dest.vouts));
     memset(sigtxid.bytes,0,sizeof(sigtxid));
+/*
     if ( hashtype != SIGHASH_ALL )
     {
         printf("currently only SIGHASH_ALL supported, not %d\n",hashtype);
         return(sigtxid);
     }
+*/
 	uint32_t overwintered = dest.version >> 31;
 	uint32_t version = dest.version & 0x7FFFFFFF;
 	
@@ -661,6 +665,43 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin, int32_t height, uint8_t *seria
 			sigtxid.bytes[i] = sig_hash[i];
 
 	}
+	else if ( coin->zcash == LP_IS_BITCOINCASH )	{
+		bits256 prevouthash,seqhash,outputhash;
+	        for (i=len=0; i<dest.tx_in; i++)
+        	{
+            	len += iguana_rwbignum(1,&serialized[len],sizeof(dest.vins[i].prev_hash),dest.vins[i].prev_hash.bytes);
+            	len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].prev_vout),&dest.vins[i].prev_vout);
+        	}
+        	prevouthash = bits256_doublesha256(0,serialized,len);
+
+        	for (i=len=0; i<dest.tx_in; i++)
+            		len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].sequence),&dest.vins[i].sequence);
+        	seqhash = bits256_doublesha256(0,serialized,len);
+        	for (i=len=0; i<dest.tx_out; i++)
+            		len += iguana_voutparse(1,&serialized[len],&dest.vouts[i]);
+        	outputhash = bits256_doublesha256(0,serialized,len);
+
+        	len = 0;
+        	len += iguana_rwnum(1,&serialized[len],sizeof(dest.version),&dest.version);
+        	len += iguana_rwbignum(1,&serialized[len],sizeof(prevouthash),prevouthash.bytes);
+        	len += iguana_rwbignum(1,&serialized[len],sizeof(seqhash),seqhash.bytes);
+        	len += iguana_rwbignum(1,&serialized[len],sizeof(dest.vins[vini].prev_hash),dest.vins[vini].prev_hash.bytes);
+        	len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[vini].prev_vout),&dest.vins[vini].prev_vout);
+        	serialized[len++] = spendlen;
+        	memcpy(&serialized[len],spendscript,spendlen), len += spendlen;
+        	len += iguana_rwnum(1,&serialized[len],sizeof(spendamount),&spendamount);
+        	len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[vini].sequence),&dest.vins[vini].sequence);
+        	len += iguana_rwbignum(1,&serialized[len],sizeof(outputhash),outputhash.bytes);
+        	len += iguana_rwnum(1,&serialized[len],sizeof(dest.lock_time),&dest.lock_time);
+        	len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
+        	//for (i=0; i<len; i++)
+        	//    printf("%02x",serialized[i]);
+        	revsigtxid = bits256_doublesha256(0,serialized,len);
+        	//printf(" B path version.%08x spendamount %.8f locktime %u hashtype %08x %s\n",dest.version,dstr(spendamount),dest.lock_time,hashtype,bits256_str(str,revsigtxid));
+        	for (i=0; i<sizeof(revsigtxid); i++)
+            		sigtxid.bytes[31-i] = revsigtxid.bytes[i];
+        	//sigtxid = revsigtxid;
+		}
 	else {
 		for (i = 0; i<dest.tx_in; i++)
 		{
@@ -1046,7 +1087,8 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
             if ( vins != 0 && jitem(vins,i) != 0 )
             {
 				uint32_t sighash = SIGHASH_ALL; // in marketmaker we use LP_sighash(symbol,zcash) to determine sighash (depends on zcash type), but here SIGHASH_ALL is enough for now
-
+		    if ( strcmp(coin->symbol,"BCH") == 0 )
+			    sighash |= SIGHASH_FORKID;
                 iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
 
 				struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *jtxout = 0;
@@ -1057,7 +1099,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 				//printf("spendamount = %.8f\n", dstr(spendamount));
 				free(jtxout);
 
-				sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,spendamount, SIGHASH_ALL,vpnstr,suppress_pubkeys);
+				sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,spendamount, sighash,vpnstr,suppress_pubkeys);
                 // printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
                 if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash,msg->vins[i].prev_vout) < 0 )
                     jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
