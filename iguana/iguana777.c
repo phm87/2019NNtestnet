@@ -20,7 +20,7 @@
 #include "secp256k1/include/secp256k1_schnorr.h"
 #include "secp256k1/include/secp256k1_rangeproof.h"
 
-const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "tBCH", "bitcoin", "111" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" }, { "LTC", "litecoin", "129" } , { "endmarker", "", "" } };
+const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BCH", "bitcoin", "111" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" }, { "LTC", "litecoin", "129" } , { "endmarker", "", "" } };
 
 struct iguana_info *iguana_coinfind(char *symbol)
 {
@@ -1050,8 +1050,10 @@ void iguana_coinargs(char *symbol,int64_t *maxrecvcachep,int32_t *minconfirmsp,i
 
 void iguana_nameset(char name[64],char *symbol,cJSON *json)
 {
-    if ( strcmp("BTC",symbol) == 0 || strcmp("tBCH",symbol) == 0 )
+    if ( strcmp("BTC",symbol) == 0 )
         strcpy(name,"Bitcoin");
+    if ( strcmp("BCH",symbol) == 0 )
+        strcpy(name,"BitcoinCash");
     else if ( strcmp("BTCD",symbol) == 0 )
         strcpy(name,"BitcoinDark");
     else
@@ -1076,21 +1078,21 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin = iguana_coinadd(symbol,name,json,virtcoin);
     //printf("ensure directories maxval.%d mult.%d start.%d end.%d\n",maxval,mult,coin->startPEND,coin->endPEND);
     mult = (strcmp("BTC",coin->symbol) != 0) ? 32 : 512;
-    mult = (strcmp("tBCH",coin->symbol) != 0) ? 32 : 512;
+    mult = (strcmp("BCH",coin->symbol) != 0) ? 32 : 512;
     maxval = IGUANA_MAXPENDBUNDLES;
     if ( coin->virtualchain == 0 )
     {
         if ( (coin->MAXPEERS= maxpeers) <= 0 )
             coin->MAXPEERS = (strcmp(symbol,"BTC") == 0) ? 128 : 64;
         if ( (coin->MAXPEERS= maxpeers) <= 0 )
-            coin->MAXPEERS = (strcmp(symbol,"tBCH") == 0) ? 128 : 64;
+            coin->MAXPEERS = (strcmp(symbol,"BCH") == 0) ? 128 : 64;
         if ( (coin->MAXRECVCACHE= maxrecvcache) == 0 )
             coin->MAXRECVCACHE = IGUANA_MAXRECVCACHE;
         if ( (coin->MAXPENDINGREQUESTS= maxrequests) <= 0 )
-            coin->MAXPENDINGREQUESTS = (strcmp(symbol,"BTC") == 0 || strcmp(symbol,"tBCH") == 0) ? IGUANA_BTCPENDINGREQUESTS : IGUANA_PENDINGREQUESTS;
+            coin->MAXPENDINGREQUESTS = (strcmp(symbol,"BTC") == 0 || strcmp(symbol,"BCH") == 0) ? IGUANA_BTCPENDINGREQUESTS : IGUANA_PENDINGREQUESTS;
         if ( jobj(json,"prefetchlag") != 0 )
             coin->PREFETCHLAG = jint(json,"prefetchlag");
-        else if ( strcmp("BTC",coin->symbol) == 0 || strcmp("tBCH",coin->symbol) == 0 )
+        else if ( strcmp("BTC",coin->symbol) == 0 || strcmp("BCH",coin->symbol) == 0 )
             coin->PREFETCHLAG = 13;
         else coin->PREFETCHLAG = -1;
         if ( (coin->MAXSTUCKTIME= juint(json,"maxstuck")) == 0 )
@@ -1158,7 +1160,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->polltimeout = IGUANA_DEFAULT_POLLTIMEOUT;
     coin->active = juint(json,"active");
     if ( (coin->minconfirms= minconfirms) == 0 )
-        coin->minconfirms = (strcmp(symbol,"BTC") == 0 || strcmp(symbol,"tBCH") == 0) ? 3 : 10;
+        coin->minconfirms = (strcmp(symbol,"BTC") == 0 || strcmp(symbol,"BCH") == 0) ? 3 : 10;
     if ( jobj(json,"RELAY") != 0 )
         coin->FULLNODE = jint(json,"RELAY");
     else coin->FULLNODE = (strcmp(coin->symbol,"BTCD") == 0);
