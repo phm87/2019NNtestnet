@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2018 The SuperNET Developers.                             *
+ * Copyright © 2014-2019 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -31,7 +31,7 @@ int32_t dpow_smallopreturn(char *symbol)
 
 int32_t dpow_is015(char *symbol)
 {
-    if ( strcmp("CHIPS",symbol) == 0 || strcmp("GAME",symbol) == 0 || strcmp("EMC2",symbol) == 0 || strcmp("tBCH",symbol) == 0 ) //strcmp("BTC",symbol) == 0 ||
+    if ( strcmp("CHIPS",symbol) == 0 || strcmp("GAME",symbol) == 0 || strcmp("EMC2",symbol) == 0 || strcmp("BCH",symbol) == 0 ) //strcmp("BTC",symbol) == 0 ||
         return(1);
     else return(0);
 }
