@@ -665,7 +665,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin, int32_t height, uint8_t *seria
 			sigtxid.bytes[i] = sig_hash[i];
 
 	}
-	else if ( strcmp(symbol,"BCH") == 0 )	{ // I wanted to use coin->zcash == LP_IS_BITCOINCASH but I had an error: error: no member named 'zcash' in 'struct iguana_info'
+	else if ( strcmp(coin->symbol,"BCH") == 0 )	{ // I wanted to use coin->zcash == LP_IS_BITCOINCASH but I had an error: error: no member named 'zcash' in 'struct iguana_info'
 		bits256 prevouthash,seqhash,outputhash;
 	        for (i=len=0; i<dest.tx_in; i++)
         	{
