@@ -29,7 +29,7 @@ static struct iguana_chain Chains[] =
 	//[CHAIN_TESTNET3] =
     {
 		//CHAIN_TESTNET3,
-        "testnet3", "tBCH", "Bitcoin Signed Message:\n", // strMessageMagic
+        "testnet3", "BCH", "Bitcoin Signed Message:\n", // strMessageMagic
 		PUBKEY_ADDRESS_TEST, SCRIPT_ADDRESS_TEST, PRIVKEY_ADDRESS_TEST,
 //		"\x0b\x11\x09\x07",
 	    	"\xf4\xe5\xf3\xf4",
@@ -301,7 +301,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             chain->pubtype = 60, chain->p2shtype = 85, chain->portp2p = 14631, chain->rpcport = 14632;
         else if ( strcmp(chain->symbol,"BTC") == 0 )
             chain->pubtype = 0, chain->p2shtype = 5, chain->portp2p = 8333, chain->rpcport = 8332;
-	else if ( strcmp(chain->symbol,"tBCH") == 0 )
+	else if ( strcmp(chain->symbol,"BCH") == 0 )
             chain->pubtype = 111, chain->p2shtype = 239, chain->portp2p = 18333, chain->rpcport = 18332, chain->wiftype = 111,decode_hex((uint8_t *)chain->netmagic,4,"f4e5f3f4");
         else chain->do_opreturn = juint(argjson,"do_opreturn");
         if ( (chain->minoutput= j64bits(argjson,"minoutput")) == 0 )
@@ -382,7 +382,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         else chain->initialreward = 50 * SATOSHIDEN;
         if ( chain->serverport[0] == 0 )
             sprintf(chain->serverport,"127.0.0.1:%u",chain->rpcport);
-        if ( strcmp(chain->symbol,"BTC") != 0 && strcmp(chain->symbol,"BTCD") != 0 && strcmp(chain->symbol,"tBCH") != 0 )
+        if ( strcmp(chain->symbol,"BTC") != 0 && strcmp(chain->symbol,"BTCD") != 0 && strcmp(chain->symbol,"BCH") != 0 )
         {
             chain->pubtype = juint(argjson,"pubval");
             chain->p2shtype = juint(argjson,"p2shval");
@@ -491,7 +491,7 @@ void iguana_chaininit(struct supernet_info *myinfo,struct iguana_chain *chain,in
     }
     chain->hasheaders = hasheaders;
     chain->hashalgo = blockhash_sha256; // most all coins seem to use this for blockchain
-    if ( strcmp(chain->symbol,"BTC") == 0 || strcmp(chain->symbol,"tBCH") == 0 )
+    if ( strcmp(chain->symbol,"BTC") == 0 || strcmp(chain->symbol,"BCH") == 0 )
     {
         chain->unitval = 0x1d;
         chain->txfee = 50000;
@@ -514,7 +514,7 @@ void iguana_chaininit(struct supernet_info *myinfo,struct iguana_chain *chain,in
     }
     if ( chain->zcash != 0 )
         chain->bundlesize = 160;
-    if ( strcmp(chain->symbol,"BTC") == 0 || strcmp(chain->symbol,"tBCH") == 0 )
+    if ( strcmp(chain->symbol,"BTC") == 0 || strcmp(chain->symbol,"BCH") == 0 )
         chain->bundlesize = 100;
     decode_hex((uint8_t *)chain->genesis_hashdata,32,(char *)chain->genesis_hash);
     if ( chain->rpcport == 0 && strcmp(chain->symbol,"RELAY") != 0 )
