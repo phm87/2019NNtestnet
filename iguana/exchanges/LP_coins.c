@@ -420,13 +420,13 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     sprintf(coin->serverport,"127.0.0.1:%u",port);
     if ( port != origport )
         printf("set curl path for %s to %s\n",symbol,coin->serverport);
-    if ( strcmp(symbol,"KMD") == 0 || strcmp(symbol,"BEER") == 0 || strcmp(symbol,"PIZZA") == 0 || coin->isassetchain != 0 || taddr != 0 )
-        coin->zcash = LP_IS_ZCASHPROTOCOL;
-    else if ( strcmp(symbol,"BCH") == 0 )
+    if ( strcmp(symbol,"BCH") == 0 )
     {
         coin->zcash = LP_IS_BITCOINCASH;
         //printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
     }
+    else if ( strcmp(symbol,"KMD") == 0 || strcmp(symbol,"BEER") == 0 || strcmp(symbol,"PIZZA") == 0 || coin->isassetchain != 0 || taddr != 0 )
+        coin->zcash = LP_IS_ZCASHPROTOCOL;
     else if ( strcmp(symbol,"BTG") == 0 )
     {
         coin->zcash = LP_IS_BITCOINGOLD;
