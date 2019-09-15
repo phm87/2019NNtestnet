@@ -48,4 +48,4 @@ sleep 3
 #curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"EMC2\",\"freq\":5,\"pubkey\":\"$pubkey\"}"
 #curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"GIN\",\"pubkey\":\"$pubkey\"}"
 #curl --url "http://127.0.0.1:7779" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"VRSC\",\"freq\":10,\"pubkey\":\"$pubkey\"}"
-curl --url "http://127.0.0.1:7780" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"tBCH\",\"pubkey\":\"$pubkey\"}"
+curl --url "http://127.0.0.1:7780" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"BCH\",\"pubkey\":\"$pubkey\"}"
