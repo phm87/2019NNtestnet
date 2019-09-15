@@ -1500,7 +1500,7 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
             bitcoin_priv2wif(wifstr,waddr.privkey,128);
             jaddstr(retjson,"BTCwif",wifstr);
         }
-	if ( need_tBCH != 0 && (coin= iguana_coinfind("tBCH")) != 0 )
+	if ( need_BCH != 0 && (coin= iguana_coinfind("BCH")) != 0 )
         {
             bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
             jaddstr(retjson,"BCHwif",wifstr);
