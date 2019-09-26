@@ -636,7 +636,10 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
         if ( utxosize != 0 )
         {
             // utxo cache listunspent 
-            sprintf(buf,"%i, \"%s\"", utxosize, coinaddr);
+	    if (strcmp("CHIPS",coin->symbol) == 0)
+                    sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
+            else
+	            sprintf(buf,"%i, \"%s\"", utxosize, coinaddr);
             if ( coin->utxocacheactive == 0 && coin->utxocacheinit < 3 && (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"dpowlistunspent", buf)) != 0 )
             {
                 coin->utxocacheinit++;
