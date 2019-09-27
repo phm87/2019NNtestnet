@@ -270,7 +270,6 @@ void dpow_clearbp(struct supernet_info *myinfo, struct dpow_info *dp, struct dpo
     bp->state = 0xffffffff;
     free(bp);
     portable_mutex_unlock(dpowT_mutex);
-    free(ptr);
 }
 
 void dpow_statemachinestart(void *ptr)
@@ -342,11 +341,7 @@ void dpow_statemachinestart(void *ptr)
                 if ( numratified > 64 )
                 {
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
-                    portable_mutex_lock(&dpowT_mutex);
-                    dp->blocks[blockindex] = 0;
-                    bp->state = 0xffffffff;
-                    free(bp);
-                    portable_mutex_unlock(&dpowT_mutex);
+                    dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
                     free(ptr);
                     return;
                 }
@@ -407,11 +402,7 @@ void dpow_statemachinestart(void *ptr)
     if ( dp->ratifying != 0 && bp->isratify == 0 )
     {
         printf("skip notarization ht.%d when ratifying\n",bp->height);
-        portable_mutex_lock(&dpowT_mutex);
-        dp->blocks[blockindex] = 0;
-        bp->state = 0xffffffff;
-        free(bp);
-        portable_mutex_unlock(&dpowT_mutex);
+        dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
         free(ptr);
         return;
     }
@@ -461,12 +452,7 @@ void dpow_statemachinestart(void *ptr)
             for (i=0; i<33; i++)
                 printf("%02x",dp->minerkey33[i]);
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
-            dp->ratifying -= bp->isratify;
-            portable_mutex_lock(&dpowT_mutex);
-            dp->blocks[blockindex] = 0;
-            bp->state = 0xffffffff;
-            free(bp);
-            portable_mutex_unlock(&dpowT_mutex);
+            dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
             free(ptr);
             return;
         }
@@ -489,6 +475,7 @@ void dpow_statemachinestart(void *ptr)
             printf("%02x",bp->ratified_pubkeys[0][i]);
         printf(" new, cant change notary0\n");
         dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
+        free(ptr);
         return;
     }
     //printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
@@ -510,6 +497,7 @@ void dpow_statemachinestart(void *ptr)
         {
             printf(RED"[%s] notary pay fund is empty, need to send coins to: REDVp3ox1pbcWYCzySadfHhk8UU3HM4k5x\n"RESET, bp->srccoin->symbol);
             dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
+            free(ptr);
             return;
         }
         if ( dpow_haveutxo(myinfo,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) > 0 && ep->dest.prev_vout != -1 )
@@ -649,4 +637,5 @@ end:
     if ( ep != 0 && ep->src.prev_vout != -1 )
         dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
     dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
+    free(ptr);
 }
