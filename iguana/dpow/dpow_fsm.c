@@ -502,14 +502,14 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( dpow_haveutxo(myinfo,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) > 0 && ep->dest.prev_vout != -1 )
         {
-            if ( dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout ) == 0)
+            if ( dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout ) == 0 )
                 printf(RED"<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n"RESET,dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
         }
         if ( dpow_haveutxo(myinfo,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr,"") > 0 && ep->src.prev_vout != -1 )
         {
-            if ( dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout ) == 0)
+            if ( dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout ) == 0 )
                 printf(RED"<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n"RESET,src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-            else if ( strcmp("KMD",dest->symbol) != 0 ) printf("[%s] >>>> locked utxo.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+            else if ( strcmp("KMD",dest->symbol) == 0 ) printf("[%s] >>>> locked utxo.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
         }
         if ( bp->isratify != 0 )
         {
