@@ -1231,6 +1231,8 @@ int32_t iguana_checkwallet(struct supernet_info *myinfo, struct iguana_info *coi
     return(spents);
 }
 
+extern int dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *txid,int32_t vout);
+
 int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,int32_t virtcoin)
 {
     int32_t maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles,spents; char name[64]; int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
@@ -1267,6 +1269,7 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
                 printf("[%s] has %i spent transactions in its wallet.dat, please fix this issue and restart.\n",symbol,spents);
                 exit(0);
             }
+            dpow_unlockunspent(myinfo,coin,"",-1);
             return(1);
         }
         else
