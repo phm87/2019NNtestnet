@@ -1267,6 +1267,7 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
                 printf("[%s] has %i spent transactions in its wallet.dat, please fix this issue and restart.\n",symbol,spents);
                 exit(0);
             }
+            dpow_unlockunspent(myinfo,coin,destaddr,"",-1);
             return(1);
         }
         else
