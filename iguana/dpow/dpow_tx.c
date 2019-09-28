@@ -156,8 +156,8 @@ uint64_t dpow_maskmin(uint64_t refmask, struct dpow_info *dp,struct dpow_block *
     printf(BLUE"Random seed: ");
     for ( i=0; i<32; i++ )
     {
-        // 32 rnd numbers from 1 -> numnotaries-1. (-2 instead of -1 test phm87)
-        rndnodes[i] = (dp->prevnotatxid.bytes[i] % (bp->numnotaries-2))+1;
+        // 32 rnd numbers from 1 -> numnotaries-1.
+        rndnodes[i] = (dp->prevnotatxid.bytes[i] % (bp->numnotaries-1))+1;
         printf("%i, ", rndnodes[i]);
     }
     printf("\n"RESET);
