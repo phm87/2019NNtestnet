@@ -517,7 +517,7 @@ cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     return(json);
 }
 
-int dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
+int dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *txid,int32_t vout)
 {
     char buf[128],*retstr;
     if ( coin->active == 0 ) return (0);
@@ -534,7 +534,7 @@ int dpow_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char 
     return(0);
 }
 
-int dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,char *txid,int32_t vout)
+int dpow_unlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *txid,int32_t vout)
 {
     char buf[128],*retstr;
     if ( coin->active == 0 ) return (0);

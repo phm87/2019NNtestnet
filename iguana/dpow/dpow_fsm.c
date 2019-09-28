@@ -502,14 +502,14 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( dpow_haveutxo(myinfo,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) > 0 && ep->dest.prev_vout != -1 )
         {
-            if ( dpow_lockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout ) == 0 )
+            if ( dpow_lockunspent(myinfo,bp->destcoin,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout ) == 0 )
                 printf(RED"<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n"RESET,dest->symbol,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
         }
         if ( dpow_haveutxo(myinfo,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr,"") > 0 && ep->src.prev_vout != -1 )
         {
-            if ( dpow_lockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout ) == 0 )
+            if ( dpow_lockunspent(myinfo,bp->srccoin,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout ) == 0 )
                 printf(RED"<<<< FAILED TO LOCK %s UTXO.(%s) vout.(%d)\n"RESET,src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
-            else if ( strcmp("KMD",dest->symbol) == 0 ) printf("[%s] >>>> locked utxo.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+            //else if ( strcmp("KMD",dest->symbol) == 0 ) printf("[%s] >>>> locked utxo.(%s) vout.(%d)\n",src->symbol,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
         }
         if ( bp->isratify != 0 )
         {
@@ -633,9 +633,9 @@ void dpow_statemachinestart(void *ptr)
     printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx bitweight(lastrecvmask).%d paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bitweight(dp->lastrecvmask),bp->paxwdcrc,src,dest);
 end:
     if ( ep != 0 && ep->dest.prev_vout != -1 )
-        dpow_unlockunspent(myinfo,bp->destcoin,destaddr,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
+        dpow_unlockunspent(myinfo,bp->destcoin,bits256_str(str2,ep->dest.prev_hash),ep->dest.prev_vout);
     if ( ep != 0 && ep->src.prev_vout != -1 )
-        dpow_unlockunspent(myinfo,bp->srccoin,srcaddr,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
+        dpow_unlockunspent(myinfo,bp->srccoin,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
     dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
     free(ptr);
 }
