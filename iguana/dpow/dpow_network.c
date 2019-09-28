@@ -2012,7 +2012,8 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         }
         if ( utxos == 2 )
             bp->recvmask |= (1LL << senderind);
-        else
+        
+        if ( (bp->recvmask & (1LL << senderind)) == 0 )
         {
             printf("%s",printstr);
 #ifdef LOGTX
