@@ -79,7 +79,7 @@ int8_t is_STAKED(const char *chain_name)
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0,retval uint64_t threadind;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
@@ -146,7 +146,6 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     {
         //dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
         //dp->prevDESTHEIGHT = dp->prevDESTHEIGHT == 0 ? 0 : dp->DESTHEIGHT;
-        int32_t threadind;
         portable_mutex_lock(&dp->dpmutex);
         dpow_clearfinishedthreads(myinfo,dp);
         if ( (threadind= dpow_newthread(myinfo, dp)) != -1 )
@@ -156,7 +155,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             ptrs[1] = (void *)dp;
             ptrs[2] = (void *)(uint64_t)dp->minsigs;
             ptrs[3] = (void *)DPOW_DURATION;
-            ptrs[4] = (void *)threadind;
+            ptrs[4] = (void *)(uint64_t)threadind;
             memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
             dp->activehash = checkpoint.blockhash.hash;
             //ht = checkpoint.blockhash.height;
@@ -169,7 +168,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             else 
             {
                 dp->threads[threadind].allocated = 1;
-                printf("[%s:%i] created thread $i...\n", dp->symbol, checkpoint.blockhash.height, threadind);
+                printf("[%s:%i] created thread %i...\n", dp->symbol, checkpoint.blockhash.height, threadind);
             }
         } else printf(RED"[%s:%i] reached maximum threads.\n"RESET, dp->symbol, checkpoint.blockhash.height);
         portable_mutex_unlock(&dp->dpmutex);

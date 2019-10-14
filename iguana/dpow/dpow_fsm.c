@@ -13,9 +13,9 @@
  *                                                                            *
  ******************************************************************************/
 
-int32_t dpow_newthread(struct supernet_info *myinfo,struct dpow_info *dp)
+uint64_t dpow_newthread(struct supernet_info *myinfo,struct dpow_info *dp)
 {
-    int32_t i;
+    uint64_t i;
     for (i = 0; i < DPOW_MAX_BLOCKS; i++) 
     {
         if ( dp->threads[i].allocated == 0 )
