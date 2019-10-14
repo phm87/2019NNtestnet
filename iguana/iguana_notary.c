@@ -79,7 +79,7 @@ int8_t is_STAKED(const char *chain_name)
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0,retval uint64_t threadind;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0,retval; uint64_t threadind;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);

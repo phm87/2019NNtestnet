@@ -318,7 +318,7 @@ void dpow_statemachinestart(void *ptr)
     minsigs = (uint32_t)(long)ptrs[2];
     duration = (uint32_t)(long)ptrs[3];
     //jsonstr = ptrs[4];
-    threadind = ptrs[4];
+    threadind = (uint32_t)(long)ptrs[4];
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
