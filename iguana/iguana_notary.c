@@ -168,7 +168,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             else 
             {
                 dp->threads[threadind].allocated = 1;
-                printf("[%s:%i] created thread %ul...\n", dp->symbol, checkpoint.blockhash.height, threadind);
+                printf("[%s:%i] created thread %lu...\n", dp->symbol, checkpoint.blockhash.height, threadind);
             }
         } else printf(RED"[%s:%i] reached maximum threads.\n"RESET, dp->symbol, checkpoint.blockhash.height);
         portable_mutex_unlock(&dp->dpmutex);
