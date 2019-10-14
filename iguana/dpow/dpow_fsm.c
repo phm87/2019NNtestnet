@@ -13,6 +13,32 @@
  *                                                                            *
  ******************************************************************************/
 
+int32_t dpow_newthread(struct supernet_info *myinfo,struct dpow_info *dp)
+{
+    int32_t i;
+    for (i = 0; i < DPOW_MAX_BLOCKS; i++) 
+    {
+        if ( dp->threads[i].allocated == 0 )
+            return(i);
+    }
+    return(-1);
+}
+
+void dpow_clearfinishedthreads(struct supernet_info *myinfo,struct dpow_info *dp)
+{
+    int32_t i;
+    for (i = 0; i < DPOW_MAX_BLOCKS; i++) 
+    {
+        if ( dp->threads[i].allocated != 0 && dp->threads[i].finished != 0 )
+        {
+            free(dp->threads[i].ptrs);
+            dp->threads[i].ptrs = 0;
+            dp->threads[i].allocated = 0;
+            dp->threads[i].finished = 0;
+        }
+    }
+}
+
 struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_block *bp,int32_t height,int32_t *senderindp,uint8_t *senderpub)
 {
     int32_t i;
@@ -264,9 +290,12 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,bits256 *prevnotatxid, struct supernet_
 
 void dpow_clearbp(struct supernet_info *myinfo, struct dpow_info *dp, struct dpow_block *bp, int32_t blockindex, portable_mutex_t *dpowT_mutex)
 {
+    portable_mutex_lock(&dp->dpmutex);
+    dp->threads[bp->threadind].finished = 1;
     dp->ratifying -= bp->isratify;
-    portable_mutex_lock(dpowT_mutex);
     dp->blocks[blockindex] = 0;
+    portable_mutex_unlock(&dp->dpmutex);
+    portable_mutex_lock(dpowT_mutex);
     bp->state = 0xffffffff;
     free(bp);
     portable_mutex_unlock(dpowT_mutex);
@@ -276,7 +305,7 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,start_destht,numratified=0,kmdheight = -1,myind = -1,blockindex=0,abort=0; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
+    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,src_or_dest,start_destht,numratified=0,kmdheight = -1,myind = -1,blockindex=0,abort=0,threadind; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
     char *destlockunspent=0,*srclockunspent=0,*destunlockunspent=0,*srcunlockunspent=0;
     memset(&zero,0,sizeof(zero));
     portable_mutex_t dpowT_mutex;
@@ -288,7 +317,8 @@ void dpow_statemachinestart(void *ptr)
     dp = ptrs[1];
     minsigs = (uint32_t)(long)ptrs[2];
     duration = (uint32_t)(long)ptrs[3];
-    jsonstr = ptrs[4];
+    //jsonstr = ptrs[4];
+    threadind = ptrs[4];
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
@@ -330,6 +360,7 @@ void dpow_statemachinestart(void *ptr)
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->myind = -1;
+        bp->threadind = threadind;
         for (i=0; i<sizeof(bp->notaries)/sizeof(*bp->notaries); i++)
             bp->notaries[i].bestk = -1;
         bp->opret_symbol = dp->symbol;

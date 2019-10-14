@@ -117,7 +117,7 @@ struct dpow_block
     struct dpow_recvdata recv[64];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t MoMdepth,state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc,lastnanosend;
-    int32_t pendingprevDESTHT,rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
+    int32_t pendingprevDESTHT,rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS],threadind;
     int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk,matches,bestmatches,minnodes;
     cJSON *ratified;
     uint16_t CCid;
@@ -138,6 +138,13 @@ struct pax_transaction
 
 #define DPOW_MAXIPBITS 512
 
+struct dpow_thread
+{
+    pthread_t thread;
+    void **ptrs;
+    int8_t allocated, finished;
+};
+
 struct dpow_info
 {
     char symbol[16],dest[16]; uint8_t minerkey33[33],minerid; int8_t bestks[64],numbestks; uint64_t lastrecvmask;
@@ -151,6 +158,7 @@ struct dpow_info
     portable_mutex_t paxmutex,dexmutex,dpmutex;
     uint32_t ipbits[DPOW_MAXIPBITS],numipbits;
     struct dpow_block **blocks,*currentbp;
+    struct dpow_thread threads[DPOW_MAX_BLOCKS];
 };
 
 struct komodo_ccdatapair { int32_t notarization_height; uint32_t MoMoMoffset; };
