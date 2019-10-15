@@ -167,6 +167,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             else 
             {
                 dp->threads[threadind].allocated = 1;
+                pthread_detach(dp->threads[threadind].thread);
                 printf("[%s:%i] created thread %lu...\n", dp->symbol, checkpoint.blockhash.height, threadind);
             }
         } else printf(RED"[%s:%i] reached maximum threads.\n"RESET, dp->symbol, checkpoint.blockhash.height);

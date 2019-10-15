@@ -35,6 +35,7 @@ void dpow_clearfinishedthreads(struct supernet_info *myinfo,struct dpow_info *dp
             dp->threads[i].ptrs = 0;
             dp->threads[i].allocated = 0;
             dp->threads[i].finished = 0;
+            printf(YELLOW"[%s:%i] removed thread %i...\n"RESET, dp->symbol, dp->height, i);
         }
     }
 }
@@ -373,7 +374,7 @@ void dpow_statemachinestart(void *ptr)
                 {
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
                     dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
-                    free(ptr);
+                    //free(ptr);
                     return;
                 }
                 for (i=0; i<numratified; i++)
@@ -528,7 +529,7 @@ void dpow_statemachinestart(void *ptr)
         {
             printf(RED"[%s] notary pay fund is empty, need to send coins to: REDVp3ox1pbcWYCzySadfHhk8UU3HM4k5x\n"RESET, bp->srccoin->symbol);
             dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
-            free(ptr);
+            //free(ptr);
             return;
         }
         if ( dpow_haveutxo(myinfo,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) > 0 && ep->dest.prev_vout != -1 )

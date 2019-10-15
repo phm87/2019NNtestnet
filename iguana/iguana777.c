@@ -1264,11 +1264,12 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
             }
             coin->active = 1;
             coin->started = 0;
+            /* Doesn't seem to really help and takes a very long time on huge wallets. uncomment for debugging corrupt wallets.
             if ( (spents= iguana_checkwallet(myinfo, coin)) != 0 )
             {
                 printf("[%s] has %i spent transactions in its wallet.dat, please fix this issue and restart.\n",symbol,spents);
                 exit(0);
-            }
+            } */
             dpow_unlockunspent(myinfo,coin,"",-1);
             return(1);
         }
