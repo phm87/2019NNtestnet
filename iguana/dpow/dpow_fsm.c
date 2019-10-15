@@ -434,7 +434,7 @@ void dpow_statemachinestart(void *ptr)
     {
         printf("skip notarization ht.%d when ratifying\n",bp->height);
         dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
-        free(ptr);
+        //free(ptr);
         return;
     }
     dp->ratifying += bp->isratify;
@@ -484,7 +484,7 @@ void dpow_statemachinestart(void *ptr)
                 printf("%02x",dp->minerkey33[i]);
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
             dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
-            free(ptr);
+            //free(ptr);
             return;
         }
         //printf("myind.%d\n",myind);
@@ -506,7 +506,7 @@ void dpow_statemachinestart(void *ptr)
             printf("%02x",bp->ratified_pubkeys[0][i]);
         printf(" new, cant change notary0\n");
         dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
-        free(ptr);
+        //free(ptr);
         return;
     }
     //printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
@@ -668,5 +668,5 @@ end:
     if ( ep != 0 && ep->src.prev_vout != -1 )
         dpow_unlockunspent(myinfo,bp->srccoin,bits256_str(str2,ep->src.prev_hash),ep->src.prev_vout);
     dpow_clearbp(myinfo, dp, bp, blockindex, &dpowT_mutex);
-    free(ptr);
+    //free(ptr);
 }

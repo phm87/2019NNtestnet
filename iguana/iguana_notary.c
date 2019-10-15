@@ -79,7 +79,7 @@ int8_t is_STAKED(const char *chain_name)
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     //struct komodo_ccdataMoMoM mdata; cJSON *blockjson; uint64_t signedmask; struct iguana_info *coin;
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0,retval; uint64_t threadind;
+    char str[65]; struct dpow_checkpoint checkpoint; int32_t i,ht,suppress=0,retval; uint64_t threadind; //void **ptrs; 
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
@@ -150,18 +150,17 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         dpow_clearfinishedthreads(myinfo,dp);
         if ( (threadind= dpow_newthread(myinfo, dp)) != -1 )
         {
-            ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
-            ptrs[0] = (void *)myinfo;
-            ptrs[1] = (void *)dp;
-            ptrs[2] = (void *)(uint64_t)dp->minsigs;
-            ptrs[3] = (void *)DPOW_DURATION;
-            ptrs[4] = (void *)(uint64_t)threadind;
-            memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
+            dp->threads[threadind].ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
+            dp->threads[threadind].ptrs[0] = (void *)myinfo;
+            dp->threads[threadind].ptrs[1] = (void *)dp;
+            dp->threads[threadind].ptrs[2] = (void *)(uint64_t)dp->minsigs;
+            dp->threads[threadind].ptrs[3] = (void *)DPOW_DURATION;
+            dp->threads[threadind].ptrs[4] = (void *)(uint64_t)threadind;
+            memcpy(&(dp->threads[threadind].ptrs[5]),&checkpoint,sizeof(checkpoint));
             dp->activehash = checkpoint.blockhash.hash;
             //ht = checkpoint.blockhash.height;
-            dp->threads[threadind].ptrs = ptrs;
             //if ( (retval= OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs)) != 0 )
-            if ( (retval= OS_thread_create(&(dp->threads[threadind].thread),NULL,(void *)dpow_statemachinestart,(void *)ptrs)) != 0 )
+            if ( (retval= OS_thread_create(&(dp->threads[threadind].thread),NULL,(void *)dpow_statemachinestart,(void *)dp->threads[threadind].ptrs)) != 0 )
             {
                 printf(RED"[%s:%i] error creating thread retval.%i\n"RESET, dp->symbol, checkpoint.blockhash.height, retval);
             }
