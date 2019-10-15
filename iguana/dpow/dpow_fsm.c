@@ -35,7 +35,7 @@ void dpow_clearfinishedthreads(struct supernet_info *myinfo,struct dpow_info *dp
             dp->threads[i].ptrs = 0;
             dp->threads[i].allocated = 0;
             dp->threads[i].finished = 0;
-            printf(YELLOW"[%s:%i] removed thread %i...\n"RESET, dp->symbol, dp->height, i);
+            printf(YELLOW"[%s] removed thread %i...\n"RESET, dp->symbol, i);
         }
     }
 }
