@@ -641,6 +641,11 @@ void dpow_statemachinestart(void *ptr)
                 if ( bp->minnodes < bp->minsigs ) 
                     bp->minnodes = bp->minsigs;
             }
+            if ( iterations > 3 && bitweight(bp->recvmask) == 1 ) 
+            {
+                printf("[%s:%i] no peers notarizing this block abort notarization\n",bp->srccoin->symbol,checkpoint.blockhash.height);
+                break;
+            }
         }
         iterations++;
         while ( abort == 0 && starttime+(iterations*30) > (uint32_t)time(NULL) ) 
@@ -649,16 +654,14 @@ void dpow_statemachinestart(void *ptr)
             if  ( dp->lastnotarizedht > bp->height && bp->isratify == 0 )
             {
                 bp->state = 0xffffffff;
+                printf(MAGENTA"[%s:%d] completed checkpoint.%d, abort notarization\n"RESET,dp->symbol,bp->height,dp->lastnotarizedht);
                 abort++;
             }
             portable_mutex_unlock(&dp->dpmutex);
             usleep(100000);
         }
         if ( abort != 0 )
-        {
-            printf(MAGENTA"[%s:%d] completed checkpoint.%d, abort notarization\n"RESET,dp->symbol,bp->height,dp->lastnotarizedht);
             break;
-        }
         printf("[%s:%i] itr.%i duration.%i minnodes.%i recvmask_num.%i\n",bp->srccoin->symbol,checkpoint.blockhash.height, iterations, (uint32_t)time(NULL)-bp->starttime,bp->minnodes,bitweight(bp->recvmask));
     }
     dp->ratifying -= bp->isratify;
