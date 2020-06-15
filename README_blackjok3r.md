@@ -1,4 +1,4 @@
-# New iguana consensus algo by blackjok3r 
+# New iguana consensus algo by blackjok3r  
 
 We seem to have a problem currently where notarizations are being distributed amoung nodes who respond the fastest rather than a proper rotating distribution that rewards uptime, node reliability, updating and adding coins on time (being a good operator :D ). This has been an extremly long investigation over more than 18 months, by myself and probably used up 1000H of my time at a conservative estimate. I hope this document makes sense and we can all agree on the best path forward, or improve on my findings and solutions even more.
 
