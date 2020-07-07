@@ -2194,6 +2194,35 @@ fn read_native_mode_conf(filename: &dyn AsRef<Path>) -> Result<(Option<u16>, Str
     Ok((rpc_port, rpc_user.clone(), rpc_password.clone()))
 }
 
+fn read_lnd_mode_conf(filename: &dyn AsRef<Path>) -> Result<(Option<u16>, String, String), String> {
+    use ini::Ini;
+
+    let conf: Ini = match Ini::load_from_file(&filename) {
+        Ok(ini) => ini,
+        Err(err) => {
+            return ERR!(
+                "Error parsing the native wallet configuration '{}': {}",
+                filename.as_ref().display(),
+                err
+            )
+        },
+    };
+    let section = conf.general_section();
+    let rpc_port = match section.get("rpcport") {
+        Some(port) => port.parse::<u16>().ok(),
+        None => None,
+    };
+    let rpc_user = try_s!(section.get("rpcuser").ok_or(ERRL!(
+        "Conf file {} doesn't have the rpcuser key",
+        filename.as_ref().display()
+    )));
+    let rpc_password = try_s!(section.get("rpcpassword").ok_or(ERRL!(
+        "Conf file {} doesn't have the rpcpassword key",
+        filename.as_ref().display()
+    )));
+    Ok((rpc_port, rpc_user.clone(), rpc_password.clone()))
+}
+
 #[cfg(not(feature = "native"))]
 fn read_native_mode_conf(_filename: &dyn AsRef<Path>) -> Result<(Option<u16>, String, String), String> {
     unimplemented!()
