@@ -346,6 +346,25 @@ impl Deref for NativeClient {
     fn deref(&self) -> &NativeClientImpl { &*self.0 }
 }
 
+#[derive(Clone, Debug)]
+pub struct LndClientImpl {
+    /// Name of coin the rpc client is intended to work with
+    pub coin_ticker: String,
+    /// The uri to send requests to
+    pub uri: String,
+    /// Value of Authorization header, e.g. "Basic base64(user:password)"
+    pub auth: String,
+    /// Transport event handlers
+    pub event_handlers: Vec<RpcTransportEventHandlerShared>,
+}
+
+#[derive(Clone, Debug)]
+pub struct LndClient(pub Arc<LndClientImpl>);
+impl Deref for LndClient {
+    type Target = LndClientImpl;
+    fn deref(&self) -> &LndClientImpl { &*self.0 }
+}
+
 /// The trait provides methods to generate the JsonRpcClient instance info such as name of coin.
 pub trait UtxoJsonRpcClientInfo: JsonRpcClient {
     /// Name of coin the rpc client is intended to work with
