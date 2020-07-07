@@ -1079,6 +1079,22 @@ impl SwapOps for LnCoin {
                         .and_then(move |_| arc.send_outputs_from_my_address(vec![htlc_out, secret_hash_op_return_out])),
                 )
             },
+            UtxoRpcClientEnum::LndClient(client) => {
+                let payment_addr = Address {
+                    checksum_type: self.checksum_type,
+                    hash: dhash160(&redeem_script),
+                    prefix: self.p2sh_addr_prefix,
+                    t_addr_prefix: self.p2sh_t_addr_prefix,
+                };
+                let arc = self.clone();
+                let addr_string = try_fus!(self.display_address(&payment_addr));
+                Either::B(
+                    client
+                        .import_address(&addr_string, &addr_string, false)
+                        .map_err(|e| ERRL!("{}", e))
+                        .and_then(move |_| arc.send_outputs_from_my_address(vec![htlc_out, secret_hash_op_return_out])),
+                )
+            },
         };
         Box::new(send_fut)
     }
