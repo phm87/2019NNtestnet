@@ -299,8 +299,8 @@ impl Into<TxFeeDetails> for UtxoFeeDetails {
     fn into(self: UtxoFeeDetails) -> TxFeeDetails { TxFeeDetails::Utxo(self) }
 }
 
-impl Into<TxFeeDetails> for LnFeeDetails {
-    fn into(self: LnFeeDetails) -> TxFeeDetails { TxFeeDetails::Ln(self) }
+impl Into<TxFeeDetails> for LnTxFeeDetails {
+    fn into(self: LnTxFeeDetails) -> TxFeeDetails { TxFeeDetails::Ln(self) }
 }
 
 /// Transaction details
