@@ -66,11 +66,11 @@ use std::time::Duration;
 pub use chain::Transaction as UtxoTx;
 
 use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl, EstimateFeeMethod, EstimateFeeMode,
-                        NativeClient, UnspentInfo, UtxoRpcClientEnum};
+                        NativeClient, UnspentInfo, UtxoRpcClientEnum, LnClient};
 use super::{CoinTransportMetrics, CoinsContext, FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin,
             RpcClientType, RpcTransportEventHandler, RpcTransportEventHandlerShared, SwapOps, TradeFee, Transaction,
             TransactionDetails, TransactionEnum, TransactionFut, WithdrawFee, WithdrawRequest};
-use crate::utxo::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, UtxoRpcClientOps};
+use crate::utxo::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, UtxoRpcClientOps, LnClient};
 
 #[cfg(test)] pub mod utxo_tests;
 
@@ -2332,6 +2332,34 @@ pub async fn utxo_coin_from_conf_and_request(
             try_s!(wait_for_protocol_version_checked(&client).await);
             UtxoRpcClientEnum::Electrum(ElectrumClient(client))
         },
+        Some("Lnd") => {
+            if cfg!(feature = "native") {
+                let native_conf_path = try_s!(confpath(conf));
+                let (rpc_port, rpc_user, rpc_password) = try_s!(read_lnd_mode_conf(&native_conf_path));
+                let auth_str = fomat!((rpc_user)":"(rpc_password));
+                let rpc_port = match rpc_port {
+                    Some(p) => p,
+                    None => try_s!(conf["rpcport"].as_u64().ok_or(ERRL!(
+                        "Rpc port is not set neither in `coins` file nor in native daemon config"
+                    ))) as u16,
+                };
+                let event_handlers =
+                    vec![
+                        CoinTransportMetrics::new(ctx.metrics.weak(), ticker.to_owned(), RpcClientType::Lnd)
+                            .into_shared(),
+                    ];
+                let client = Arc::new(NativeClientImpl {
+                    coin_ticker: ticker.to_string(),
+                    uri: fomat!("http://127.0.0.1:"(rpc_port)),
+                    auth: format!("Basic {}", base64_encode(&auth_str, URL_SAFE)),
+                    event_handlers,
+                });
+
+                UtxoRpcClientEnum::Lnd(LndClient(client))
+            } else {
+                return ERR!("Native UTXO mode is not available in non-native build (tricked for LN)");
+            }
+        }
         _ => return ERR!("utxo_coin_from_conf_and_request should be called only by enable or electrum requests"),
     };
     let asset_chain = conf["asset"].as_str().is_some();
