@@ -1648,7 +1648,7 @@ async fn withdraw_impl(coin: LnCoin, req: WithdrawRequest) -> Result<Transaction
         coin.signature_version,
         coin.fork_id
     ));
-    let fee_details = LnFeeDetails {
+    let fee_details = LnTxFeeDetails {
         amount: big_decimal_from_sat(data.fee_amount as i64, coin.decimals),
     };
     let my_address = try_s!(coin.my_address());
@@ -1671,7 +1671,7 @@ async fn withdraw_impl(coin: LnCoin, req: WithdrawRequest) -> Result<Transaction
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct LnFeeDetails {
+pub struct LnTxFeeDetails {
     amount: BigDecimal,
 }
 
@@ -2034,7 +2034,7 @@ impl MmCoin for LnCoin {
                 total_amount: big_decimal_from_sat(input_amount as i64, selfi.decimals),
                 tx_hash: tx.hash().reversed().to_vec().into(),
                 tx_hex: verbose_tx.hex,
-                fee_details: Some(LnFeeDetails { amount: fee }.into()),
+                fee_details: Some(LnTxFeeDetails { amount: fee }.into()),
                 block_height: verbose_tx.height.unwrap_or(0),
                 coin: selfi.ticker.clone(),
                 internal_id: tx.hash().reversed().to_vec().into(),
