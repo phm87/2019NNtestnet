@@ -1413,7 +1413,7 @@ impl SwapOps for LnCoin {
                     match history.first() {
                         Some(item) => {
                             let tx_bytes = try_s!(client.get_transaction_bytes(item.tx_hash.clone()).compat().await);
-                            let tx: UtxoTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+                            let tx: LnTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
                             Ok(Some(tx.into()))
                         },
                         None => Ok(None),
@@ -1431,7 +1431,7 @@ impl SwapOps for LnCoin {
                     for item in received_by_addr {
                         if item.address == target_addr && !item.txids.is_empty() {
                             let tx_bytes = try_s!(client.get_transaction_bytes(item.txids[0].clone()).compat().await);
-                            let tx: UtxoTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+                            let tx: LnTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
                             return Ok(Some(tx.into()));
                         }
                     }
@@ -1512,13 +1512,13 @@ impl MarketCoinOps for LnCoin {
         wait_until: u64,
         check_every: u64,
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
-        let tx: UtxoTx = try_fus!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
+        let tx: LnTx = try_fus!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
         self.rpc_client
             .wait_for_confirmations(&tx, confirmations as u32, requires_nota, wait_until, check_every)
     }
 
     fn wait_for_tx_spend(&self, tx_bytes: &[u8], wait_until: u64, from_block: u64) -> TransactionFut {
-        let tx: UtxoTx = try_fus!(deserialize(tx_bytes).map_err(|e| ERRL!("{:?}", e)));
+        let tx: LnTx = try_fus!(deserialize(tx_bytes).map_err(|e| ERRL!("{:?}", e)));
         let vout = 0;
         let client = self.rpc_client.clone();
         let fut = async move {
@@ -1546,7 +1546,7 @@ impl MarketCoinOps for LnCoin {
     }
 
     fn tx_enum_from_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
-        let transaction: UtxoTx = try_s!(deserialize(bytes).map_err(|err| format!("{:?}", err)));
+        let transaction: LnTx = try_s!(deserialize(bytes).map_err(|err| format!("{:?}", err)));
         Ok(transaction.into())
     }
 
@@ -1940,8 +1940,8 @@ impl MmCoin for LnCoin {
         let selfi = self.clone();
         let fut = async move {
             let verbose_tx = try_s!(selfi.rpc_client.get_verbose_transaction(hash).compat().await);
-            let tx: UtxoTx = try_s!(deserialize(verbose_tx.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
-            let mut input_transactions: HashMap<&H256, UtxoTx> = HashMap::new();
+            let tx: LnTx = try_s!(deserialize(verbose_tx.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+            let mut input_transactions: HashMap<&H256, LnTx> = HashMap::new();
             let mut input_amount = 0;
             let mut output_amount = 0;
             let mut from_addresses = vec![];
@@ -1964,7 +1964,7 @@ impl MmCoin for LnCoin {
                                 .compat()
                                 .await
                         );
-                        let prev_tx: UtxoTx =
+                        let prev_tx: LnTx =
                             try_s!(deserialize(prev.as_slice()).map_err(|e| ERRL!("{:?}, tx: {:?}", e, prev_hash)));
                         e.insert(prev_tx)
                     },
