@@ -75,6 +75,7 @@ impl rustls::ServerCertVerifier for NoCertificateVerification {
 pub enum UtxoRpcClientEnum {
     Native(NativeClient),
     Electrum(ElectrumClient),
+    Lnd(LndClient),
 }
 
 impl From<ElectrumClient> for UtxoRpcClientEnum {
