@@ -64,6 +64,8 @@ pub mod eth;
 use self::eth::{eth_coin_from_conf_and_request, EthCoin, EthTxFeeDetails, SignedEthTx};
 pub mod utxo;
 use self::utxo::{utxo_coin_from_conf_and_request, UtxoCoin, UtxoFeeDetails, UtxoTx};
+pub mod ln;
+use self::ln::{ln_coin_from_conf_and_request, LnCoin, LnFeeDetails, LnTx};
 #[doc(hidden)]
 #[allow(unused_variables)]
 pub mod test_coin;
@@ -258,6 +260,12 @@ pub enum WithdrawFee {
         gas_price: BigDecimal,
         gas: u64,
     },
+    LnFixed {
+        amount: BigDecimal,
+    },
+    LnPerKbyte {
+        amount: BigDecimal,
+    },
 }
 
 #[allow(dead_code)]
@@ -277,6 +285,7 @@ pub struct WithdrawRequest {
 pub enum TxFeeDetails {
     Utxo(UtxoFeeDetails),
     Eth(EthTxFeeDetails),
+    Ln(LnTxFeeDetails),
 }
 
 impl Into<TxFeeDetails> for EthTxFeeDetails {
@@ -285,6 +294,10 @@ impl Into<TxFeeDetails> for EthTxFeeDetails {
 
 impl Into<TxFeeDetails> for UtxoFeeDetails {
     fn into(self: UtxoFeeDetails) -> TxFeeDetails { TxFeeDetails::Utxo(self) }
+}
+
+impl Into<TxFeeDetails> for LnFeeDetails {
+    fn into(self: LnFeeDetails) -> TxFeeDetails { TxFeeDetails::Ln(self) }
 }
 
 /// Transaction details
@@ -432,6 +445,7 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 pub enum MmCoinEnum {
     UtxoCoin(UtxoCoin),
     EthCoin(EthCoin),
+    LnCoin(LnCoin)
     Test(TestCoin),
 }
 
@@ -441,6 +455,10 @@ impl From<UtxoCoin> for MmCoinEnum {
 
 impl From<EthCoin> for MmCoinEnum {
     fn from(c: EthCoin) -> MmCoinEnum { MmCoinEnum::EthCoin(c) }
+}
+
+impl From<LnCoin> for MmCoinEnum {
+    fn from(c: LnCoin) -> MmCoinEnum { MmCoinEnum::LnCoin(c) }
 }
 
 impl From<TestCoin> for MmCoinEnum {
@@ -454,6 +472,7 @@ impl Deref for MmCoinEnum {
         match self {
             MmCoinEnum::UtxoCoin(ref c) => c,
             MmCoinEnum::EthCoin(ref c) => c,
+            MmCoinEnum::LnCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,
         }
     }
@@ -532,6 +551,7 @@ pub enum RpcClientType {
     Native,
     Electrum,
     Ethereum,
+    Lnd,
 }
 
 impl ToString for RpcClientType {
@@ -540,6 +560,7 @@ impl ToString for RpcClientType {
             RpcClientType::Native => "native".into(),
             RpcClientType::Electrum => "electrum".into(),
             RpcClientType::Ethereum => "ethereum".into(),
+            RpcClientType::Lnd => "lnd".into(),
         }
     }
 }
@@ -632,7 +653,11 @@ pub async fn lp_coininit(ctx: &MmArc, ticker: &str, req: &Json) -> Result<MmCoin
     let secret = &*ctx.secp256k1_key_pair().private().secret;
 
     let coin: MmCoinEnum = if coins_en["etomic"].is_null() {
+        if coins_en["ln"].is_null() {
+            try_s!(ln_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret).await).into()
+        } else {
         try_s!(utxo_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret).await).into()
+        }
     } else {
         try_s!(eth_coin_from_conf_and_request(ctx, ticker, coins_en, req, secret).await).into()
     };
