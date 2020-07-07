@@ -2331,7 +2331,7 @@ pub async fn utxo_coin_from_conf_and_request(
 
             try_s!(wait_for_protocol_version_checked(&client).await);
             UtxoRpcClientEnum::Electrum(ElectrumClient(client))
-        }
+        },
         _ => return ERR!("utxo_coin_from_conf_and_request should be called only by enable or electrum requests"),
     };
     let asset_chain = conf["asset"].as_str().is_some();
