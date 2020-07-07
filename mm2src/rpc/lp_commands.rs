@@ -114,6 +114,24 @@ pub async fn enable(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> 
     Ok(try_s!(Response::builder().body(res)))
 }
 
+/// Enable a LN coin in the local wallet mode with LND.
+pub async fn lnd(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
+    // TODO
+    let ticker = try_s!(req["coin"].as_str().ok_or("No 'coin' field")).to_owned();
+    let coin: MmCoinEnum = try_s!(lp_coininit(&ctx, &ticker, &req).await);
+    let balance = try_s!(coin.my_balance().compat().await);
+    let res = json! ({
+        "result": "success",
+        "address": try_s!(coin.my_address()),
+        "balance": balance,
+        "coin": coin.ticker(),
+        "required_confirmations": coin.required_confirmations(),
+        "requires_notarization": coin.requires_notarization(),
+    });
+    let res = try_s!(json::to_vec(&res));
+    Ok(try_s!(Response::builder().body(res)))
+}
+
 pub fn help() -> HyRes {
     rpc_response(
         200,
