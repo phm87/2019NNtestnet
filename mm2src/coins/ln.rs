@@ -66,11 +66,11 @@ use std::time::Duration;
 pub use chain::Transaction as LnTx;
 
 use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl, EstimateFeeMethod, EstimateFeeMode,
-                        NativeClient, UnspentInfo, UtxoRpcClientEnum};
+                        NativeClient, UnspentInfo, UtxoRpcClientEnum, LndClient};
 use super::{CoinTransportMetrics, CoinsContext, FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin,
             RpcClientType, RpcTransportEventHandler, RpcTransportEventHandlerShared, SwapOps, TradeFee, Transaction,
             TransactionDetails, TransactionEnum, TransactionFut, WithdrawFee, WithdrawRequest};
-use crate::utxo::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, UtxoRpcClientOps};
+use crate::utxo::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, UtxoRpcClientOps, LndClientImpl};
 
 #[cfg(test)] pub mod ln_tests;
 
