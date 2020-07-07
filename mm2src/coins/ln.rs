@@ -567,14 +567,14 @@ fn big_decimal_from_sat(satoshis: i64, decimals: u8) -> BigDecimal {
 }
 
 #[derive(Clone, Debug)]
-pub struct UtxoCoin(Arc<UtxoCoinImpl>);
-impl Deref for UtxoCoin {
-    type Target = UtxoCoinImpl;
-    fn deref(&self) -> &UtxoCoinImpl { &*self.0 }
+pub struct LnCoin(Arc<LnCoinImpl>);
+impl Deref for LnCoin {
+    type Target = LnCoinImpl;
+    fn deref(&self) -> &LnCoinImpl { &*self.0 }
 }
 
-impl From<UtxoCoinImpl> for UtxoCoin {
-    fn from(coin: UtxoCoinImpl) -> UtxoCoin { UtxoCoin(Arc::new(coin)) }
+impl From<LnCoinImpl> for LnCoin {
+    fn from(coin: LnCoinImpl) -> LnCoin { LnCoin(Arc::new(coin)) }
 }
 
 // We can use a shared UTXO lock for all UTXO coins at 1 time.
@@ -591,7 +591,7 @@ macro_rules! true_or_err {
     };
 }
 
-async fn send_outputs_from_my_address_impl(coin: UtxoCoin, outputs: Vec<TransactionOutput>) -> Result<UtxoTx, String> {
+async fn send_outputs_from_my_address_impl(coin: LnCoin, outputs: Vec<TransactionOutput>) -> Result<UtxoTx, String> {
     let _utxo_lock = UTXO_LOCK.lock().await;
     let unspents = try_s!(
         coin.rpc_client
@@ -1568,7 +1568,7 @@ impl MarketCoinOps for LnCoin {
     fn display_priv_key(&self) -> String { format!("{}", self.key_pair.private()) }
 }
 
-async fn withdraw_impl(coin: UtxoCoin, req: WithdrawRequest) -> Result<TransactionDetails, String> {
+async fn withdraw_impl(coin: LnCoin, req: WithdrawRequest) -> Result<TransactionDetails, String> {
     let to = match &coin.address_format {
         UtxoAddressFormat::Standard => try_s!(Address::from_str(&req.to)),
         UtxoAddressFormat::CashAddress { .. } => try_s!(Address::from_cashaddress(
@@ -1632,7 +1632,7 @@ async fn withdraw_impl(coin: UtxoCoin, req: WithdrawRequest) -> Result<Transacti
         coin.signature_version,
         coin.fork_id
     ));
-    let fee_details = UtxoFeeDetails {
+    let fee_details = LnFeeDetails {
         amount: big_decimal_from_sat(data.fee_amount as i64, coin.decimals),
     };
     let my_address = try_s!(coin.my_address());
@@ -1655,7 +1655,7 @@ async fn withdraw_impl(coin: UtxoCoin, req: WithdrawRequest) -> Result<Transacti
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct UtxoFeeDetails {
+pub struct LnFeeDetails {
     amount: BigDecimal,
 }
 
@@ -2018,7 +2018,7 @@ impl MmCoin for LnCoin {
                 total_amount: big_decimal_from_sat(input_amount as i64, selfi.decimals),
                 tx_hash: tx.hash().reversed().to_vec().into(),
                 tx_hex: verbose_tx.hex,
-                fee_details: Some(UtxoFeeDetails { amount: fee }.into()),
+                fee_details: Some(LnFeeDetails { amount: fee }.into()),
                 block_height: verbose_tx.height.unwrap_or(0),
                 coin: selfi.ticker.clone(),
                 internal_id: tx.hash().reversed().to_vec().into(),
@@ -2228,7 +2228,7 @@ pub async fn ln_coin_from_conf_and_request(
     conf: &Json,
     req: &Json,
     priv_key: &[u8],
-) -> Result<UtxoCoin, String> {
+) -> Result<LnCoin, String> {
     let checksum_type = if ticker == "GRS" {
         ChecksumType::DGROESTL512
     } else if ticker == "SMART" {
@@ -2436,7 +2436,7 @@ pub async fn ln_coin_from_conf_and_request(
         .unwrap_or_else(|| conf["requires_notarization"].as_bool().unwrap_or(false))
         .into();
 
-    let coin = UtxoCoinImpl {
+    let coin = LnCoinImpl {
         ticker: ticker.into(),
         decimals,
         rpc_client,
@@ -2469,7 +2469,7 @@ pub async fn ln_coin_from_conf_and_request(
         mtp_block_count: json::from_value(conf["mtp_block_count"].clone()).unwrap_or(KMD_MTP_BLOCK_COUNT),
         estimate_fee_mode: json::from_value(conf["estimate_fee_mode"].clone()).unwrap_or(None),
     };
-    Ok(UtxoCoin(Arc::new(coin)))
+    Ok(LnCoin(Arc::new(coin)))
 }
 
 /// Ping the electrum servers every 30 seconds to prevent them from disconnecting us.
