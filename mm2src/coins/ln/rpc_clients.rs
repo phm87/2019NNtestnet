@@ -5,7 +5,7 @@
 use crate::{RpcTransportEventHandler, RpcTransportEventHandlerShared};
 use bigdecimal::BigDecimal;
 use bytes::BytesMut;
-use chain::{BlockHeader, OutPoint, Transaction as UtxoTx};
+use chain::{BlockHeader, OutPoint, Transaction as LnTx};
 use common::custom_futures::{join_all_sequential, select_ok_sequential};
 use common::executor::{spawn, Timer};
 use common::jsonrpc_client::{JsonRpcClient, JsonRpcMultiClient, JsonRpcRemoteAddr, JsonRpcRequest, JsonRpcResponse,
@@ -72,31 +72,31 @@ impl rustls::ServerCertVerifier for NoCertificateVerification {
 }
 
 #[derive(Debug)]
-pub enum UtxoRpcClientEnum {
+pub enum LnRpcClientEnum {
     Native(NativeClient),
     Electrum(ElectrumClient),
     Lnd(LndClient),
 }
 
-impl From<ElectrumClient> for UtxoRpcClientEnum {
-    fn from(client: ElectrumClient) -> UtxoRpcClientEnum { UtxoRpcClientEnum::Electrum(client) }
+impl From<ElectrumClient> for LnRpcClientEnum {
+    fn from(client: ElectrumClient) -> LnRpcClientEnum { LnRpcClientEnum::Electrum(client) }
 }
 
-impl Deref for UtxoRpcClientEnum {
-    type Target = dyn UtxoRpcClientOps;
-    fn deref(&self) -> &dyn UtxoRpcClientOps {
+impl Deref for LnRpcClientEnum {
+    type Target = dyn LnRpcClientOps;
+    fn deref(&self) -> &dyn LnRpcClientOps {
         match self {
-            UtxoRpcClientEnum::Native(ref c) => c,
-            UtxoRpcClientEnum::Electrum(ref c) => c,
+            LnRpcClientEnum::Native(ref c) => c,
+            LnRpcClientEnum::Electrum(ref c) => c,
         }
     }
 }
 
-impl Clone for UtxoRpcClientEnum {
+impl Clone for LnRpcClientEnum {
     fn clone(&self) -> Self {
         match self {
-            UtxoRpcClientEnum::Native(c) => UtxoRpcClientEnum::Native(c.clone()),
-            UtxoRpcClientEnum::Electrum(c) => UtxoRpcClientEnum::Electrum(c.clone()),
+            LnRpcClientEnum::Native(c) => LnRpcClientEnum::Native(c.clone()),
+            LnRpcClientEnum::Electrum(c) => LnRpcClientEnum::Electrum(c.clone()),
         }
     }
 }
@@ -104,7 +104,7 @@ impl Clone for UtxoRpcClientEnum {
 impl UtxoRpcClientEnum {
     pub fn wait_for_confirmations(
         &self,
-        tx: &UtxoTx,
+        tx: &LnTx,
         confirmations: u32,
         requires_notarization: bool,
         wait_until: u64,
@@ -160,13 +160,13 @@ pub struct UnspentInfo {
     pub value: u64,
 }
 
-pub type UtxoRpcRes<T> = Box<dyn Future<Item = T, Error = String> + Send + 'static>;
+pub type LnRpcRes<T> = Box<dyn Future<Item = T, Error = String> + Send + 'static>;
 
-/// Common operations that both types of UTXO clients have but implement them differently
-pub trait UtxoRpcClientOps: fmt::Debug + Send + Sync + 'static {
-    fn list_unspent_ordered(&self, address: &Address) -> UtxoRpcRes<Vec<UnspentInfo>>;
+/// Common operations that both types of Ln clients have but implement them differently
+pub trait LnRpcClientOps: fmt::Debug + Send + Sync + 'static {
+    fn list_unspent_ordered(&self, address: &Address) -> LnRpcRes<Vec<UnspentInfo>>;
 
-    fn send_transaction(&self, tx: &UtxoTx, my_addr: Address) -> UtxoRpcRes<H256Json>;
+    fn send_transaction(&self, tx: &LnTx, my_addr: Address) -> LnRpcRes<H256Json>;
 
     fn send_raw_transaction(&self, tx: BytesJson) -> RpcRes<H256Json>;
 
@@ -190,10 +190,10 @@ pub trait UtxoRpcClientOps: fmt::Debug + Send + Sync + 'static {
 
     fn find_output_spend(
         &self,
-        tx: &UtxoTx,
+        tx: &LnTx,
         vout: usize,
         from_block: u64,
-    ) -> Box<dyn Future<Item = Option<UtxoTx>, Error = String> + Send>;
+    ) -> Box<dyn Future<Item = Option<LnTx>, Error = String> + Send>;
 
     /// Get median time past for `count` blocks in the past including `starting_block`
     fn get_median_time_past(
@@ -366,7 +366,7 @@ impl Deref for LndClient {
 }
 
 /// The trait provides methods to generate the JsonRpcClient instance info such as name of coin.
-pub trait UtxoJsonRpcClientInfo: JsonRpcClient {
+pub trait LnJsonRpcClientInfo: JsonRpcClient {
     /// Name of coin the rpc client is intended to work with
     fn coin_name(&self) -> &str;
 
@@ -374,7 +374,7 @@ pub trait UtxoJsonRpcClientInfo: JsonRpcClient {
     fn client_info(&self) -> String { format!("coin: {}", self.coin_name()) }
 }
 
-impl UtxoJsonRpcClientInfo for NativeClientImpl {
+impl LnJsonRpcClientInfo for NativeClientImpl {
     fn coin_name(&self) -> &str { self.coin_ticker.as_str() }
 }
 
@@ -383,7 +383,7 @@ impl JsonRpcClient for NativeClientImpl {
 
     fn next_id(&self) -> String { "0".into() }
 
-    fn client_info(&self) -> String { UtxoJsonRpcClientInfo::client_info(self) }
+    fn client_info(&self) -> String { LnJsonRpcClientInfo::client_info(self) }
 
     fn transport(&self, request: JsonRpcRequest) -> JsonRpcResponseFut {
         let request_body = try_fus!(json::to_string(&request));
@@ -424,8 +424,8 @@ impl JsonRpcClient for NativeClientImpl {
 }
 
 #[cfg_attr(test, mockable)]
-impl UtxoRpcClientOps for NativeClient {
-    fn list_unspent_ordered(&self, address: &Address) -> UtxoRpcRes<Vec<UnspentInfo>> {
+impl LnRpcClientOps for NativeClient {
+    fn list_unspent_ordered(&self, address: &Address) -> LnRpcRes<Vec<UnspentInfo>> {
         let clone = self.0.clone();
         Box::new(
             self.list_unspent(0, std::i32::MAX, vec![address.to_string()])
@@ -470,7 +470,7 @@ impl UtxoRpcClientOps for NativeClient {
         )
     }
 
-    fn send_transaction(&self, tx: &UtxoTx, _addr: Address) -> UtxoRpcRes<H256Json> {
+    fn send_transaction(&self, tx: &LnTx, _addr: Address) -> LnRpcRes<H256Json> {
         Box::new(
             self.send_raw_transaction(BytesJson::from(serialize(tx)))
                 .map_err(|e| ERRL!("{}", e)),
@@ -523,10 +523,10 @@ impl UtxoRpcClientOps for NativeClient {
 
     fn find_output_spend(
         &self,
-        tx: &UtxoTx,
+        tx: &LnTx,
         vout: usize,
         from_block: u64,
-    ) -> Box<dyn Future<Item = Option<UtxoTx>, Error = String> + Send> {
+    ) -> Box<dyn Future<Item = Option<LnTx>, Error = String> + Send> {
         let selfi = self.clone();
         let tx = tx.clone();
         let fut = async move {
@@ -534,7 +534,7 @@ impl UtxoRpcClientOps for NativeClient {
             let list_since_block: ListSinceBlockRes = try_s!(selfi.list_since_block(from_block_hash).compat().await);
             for transaction in list_since_block.transactions {
                 let maybe_spend_tx_bytes = try_s!(selfi.get_raw_transaction_bytes(transaction.txid).compat().await);
-                let maybe_spend_tx: UtxoTx =
+                let maybe_spend_tx: LnTx =
                     try_s!(deserialize(maybe_spend_tx_bytes.as_slice()).map_err(|e| ERRL!("{:?}", e)));
 
                 for input in maybe_spend_tx.inputs.iter() {
@@ -594,10 +594,10 @@ impl NativeClientImpl {
         rpc_func!(self, "validateaddress", address)
     }
 
-    pub fn output_amount(&self, txid: H256Json, index: usize) -> UtxoRpcRes<u64> {
+    pub fn output_amount(&self, txid: H256Json, index: usize) -> LnRpcRes<u64> {
         let fut = self.get_raw_transaction_bytes(txid).map_err(|e| ERRL!("{}", e));
         Box::new(fut.and_then(move |bytes| {
-            let tx: UtxoTx = try_s!(deserialize(bytes.as_slice()).map_err(|e| ERRL!(
+            let tx: LnTx = try_s!(deserialize(bytes.as_slice()).map_err(|e| ERRL!(
                 "Error {:?} trying to deserialize the transaction {:?}",
                 e,
                 bytes
@@ -1209,7 +1209,7 @@ impl Deref for ElectrumClient {
 
 const BLOCKCHAIN_HEADERS_SUB_ID: &str = "blockchain.headers.subscribe";
 
-impl UtxoJsonRpcClientInfo for ElectrumClient {
+impl LnJsonRpcClientInfo for ElectrumClient {
     fn coin_name(&self) -> &str { self.coin_ticker.as_str() }
 }
 
@@ -1218,7 +1218,7 @@ impl JsonRpcClient for ElectrumClient {
 
     fn next_id(&self) -> String { self.next_id.fetch_add(1, AtomicOrdering::Relaxed).to_string() }
 
-    fn client_info(&self) -> String { UtxoJsonRpcClientInfo::client_info(self) }
+    fn client_info(&self) -> String { LnJsonRpcClientInfo::client_info(self) }
 
     fn transport(&self, request: JsonRpcRequest) -> JsonRpcResponseFut {
         Box::new(electrum_request_multi(self.clone(), request).boxed().compat())
@@ -1305,8 +1305,8 @@ impl ElectrumClient {
 }
 
 #[cfg_attr(test, mockable)]
-impl UtxoRpcClientOps for ElectrumClient {
-    fn list_unspent_ordered(&self, address: &Address) -> UtxoRpcRes<Vec<UnspentInfo>> {
+impl LnRpcClientOps for ElectrumClient {
+    fn list_unspent_ordered(&self, address: &Address) -> LnRpcRes<Vec<UnspentInfo>> {
         let script = Builder::build_p2pkh(&address.hash);
         let script_hash = electrum_script_hash(&script);
         Box::new(
@@ -1336,7 +1336,7 @@ impl UtxoRpcClientOps for ElectrumClient {
         )
     }
 
-    fn send_transaction(&self, tx: &UtxoTx, my_addr: Address) -> UtxoRpcRes<H256Json> {
+    fn send_transaction(&self, tx: &LnTx, my_addr: Address) -> LnRpcRes<H256Json> {
         let bytes = BytesJson::from(serialize(tx));
         let inputs = tx.inputs.clone();
         let arc = self.clone();
