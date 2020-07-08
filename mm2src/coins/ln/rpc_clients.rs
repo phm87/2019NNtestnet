@@ -5,7 +5,7 @@
 use crate::{RpcTransportEventHandler, RpcTransportEventHandlerShared};
 use bigdecimal::BigDecimal;
 use bytes::BytesMut;
-use chain::{BlockHeader, OutPoint, Transaction as LnTx};
+use chain::{BlockHeader, OutPoint, Transaction as UtxoTx};
 use common::custom_futures::{join_all_sequential, select_ok_sequential};
 use common::executor::{spawn, Timer};
 use common::jsonrpc_client::{JsonRpcClient, JsonRpcMultiClient, JsonRpcRemoteAddr, JsonRpcRequest, JsonRpcResponse,
@@ -104,7 +104,7 @@ impl Clone for LnRpcClientEnum {
 impl LnRpcClientEnum {
     pub fn wait_for_confirmations(
         &self,
-        tx: &LnTx,
+        tx: &UtxoTx,
         confirmations: u32,
         requires_notarization: bool,
         wait_until: u64,
@@ -166,7 +166,7 @@ pub type LnRpcRes<T> = Box<dyn Future<Item = T, Error = String> + Send + 'static
 pub trait LnRpcClientOps: fmt::Debug + Send + Sync + 'static {
     fn list_unspent_ordered(&self, address: &Address) -> LnRpcRes<Vec<UnspentInfo>>;
 
-    fn send_transaction(&self, tx: &LnTx, my_addr: Address) -> LnRpcRes<H256Json>;
+    fn send_transaction(&self, tx: &UtxoTx, my_addr: Address) -> LnRpcRes<H256Json>;
 
     fn send_raw_transaction(&self, tx: BytesJson) -> RpcRes<H256Json>;
 
@@ -190,10 +190,10 @@ pub trait LnRpcClientOps: fmt::Debug + Send + Sync + 'static {
 
     fn find_output_spend(
         &self,
-        tx: &LnTx,
+        tx: &UtxoTx,
         vout: usize,
         from_block: u64,
-    ) -> Box<dyn Future<Item = Option<LnTx>, Error = String> + Send>;
+    ) -> Box<dyn Future<Item = Option<UtxoTx>, Error = String> + Send>;
 
     /// Get median time past for `count` blocks in the past including `starting_block`
     fn get_median_time_past(
@@ -470,7 +470,7 @@ impl LnRpcClientOps for NativeClient {
         )
     }
 
-    fn send_transaction(&self, tx: &LnTx, _addr: Address) -> LnRpcRes<H256Json> {
+    fn send_transaction(&self, tx: &UtxoTx, _addr: Address) -> LnRpcRes<H256Json> {
         Box::new(
             self.send_raw_transaction(BytesJson::from(serialize(tx)))
                 .map_err(|e| ERRL!("{}", e)),
@@ -523,10 +523,10 @@ impl LnRpcClientOps for NativeClient {
 
     fn find_output_spend(
         &self,
-        tx: &LnTx,
+        tx: &UtxoTx,
         vout: usize,
         from_block: u64,
-    ) -> Box<dyn Future<Item = Option<LnTx>, Error = String> + Send> {
+    ) -> Box<dyn Future<Item = Option<UtxoTx>, Error = String> + Send> {
         let selfi = self.clone();
         let tx = tx.clone();
         let fut = async move {
@@ -534,7 +534,7 @@ impl LnRpcClientOps for NativeClient {
             let list_since_block: ListSinceBlockRes = try_s!(selfi.list_since_block(from_block_hash).compat().await);
             for transaction in list_since_block.transactions {
                 let maybe_spend_tx_bytes = try_s!(selfi.get_raw_transaction_bytes(transaction.txid).compat().await);
-                let maybe_spend_tx: LnTx =
+                let maybe_spend_tx: UtxoTx =
                     try_s!(deserialize(maybe_spend_tx_bytes.as_slice()).map_err(|e| ERRL!("{:?}", e)));
 
                 for input in maybe_spend_tx.inputs.iter() {
@@ -597,7 +597,7 @@ impl NativeClientImpl {
     pub fn output_amount(&self, txid: H256Json, index: usize) -> LnRpcRes<u64> {
         let fut = self.get_raw_transaction_bytes(txid).map_err(|e| ERRL!("{}", e));
         Box::new(fut.and_then(move |bytes| {
-            let tx: LnTx = try_s!(deserialize(bytes.as_slice()).map_err(|e| ERRL!(
+            let tx: UtxoTx = try_s!(deserialize(bytes.as_slice()).map_err(|e| ERRL!(
                 "Error {:?} trying to deserialize the transaction {:?}",
                 e,
                 bytes
@@ -1336,7 +1336,7 @@ impl LnRpcClientOps for ElectrumClient {
         )
     }
 
-    fn send_transaction(&self, tx: &LnTx, my_addr: Address) -> LnRpcRes<H256Json> {
+    fn send_transaction(&self, tx: &UtxoTx, my_addr: Address) -> LnRpcRes<H256Json> {
         let bytes = BytesJson::from(serialize(tx));
         let inputs = tx.inputs.clone();
         let arc = self.clone();
@@ -1427,10 +1427,10 @@ impl LnRpcClientOps for ElectrumClient {
 
     fn find_output_spend(
         &self,
-        tx: &LnTx,
+        tx: &UtxoTx,
         vout: usize,
         _from_block: u64,
-    ) -> Box<dyn Future<Item = Option<LnTx>, Error = String> + Send> {
+    ) -> Box<dyn Future<Item = Option<UtxoTx>, Error = String> + Send> {
         let selfi = self.clone();
         let script_hash = hex::encode(electrum_script_hash(&tx.outputs[vout].script_pubkey));
         let tx = tx.clone();
@@ -1444,7 +1444,7 @@ impl LnRpcClientOps for ElectrumClient {
             for item in history.iter() {
                 let transaction = try_s!(selfi.get_transaction_bytes(item.tx_hash.clone()).compat().await);
 
-                let maybe_spend_tx: LnTx = try_s!(deserialize(transaction.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+                let maybe_spend_tx: UtxoTx = try_s!(deserialize(transaction.as_slice()).map_err(|e| ERRL!("{:?}", e)));
 
                 for input in maybe_spend_tx.inputs.iter() {
                     if input.previous_output.hash == tx.hash() && input.previous_output.index == vout as u32 {
