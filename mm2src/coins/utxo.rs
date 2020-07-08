@@ -63,7 +63,7 @@ use std::sync::{Arc, Mutex, Weak};
 use std::thread;
 use std::time::Duration;
 
-pub use chain::Transaction::UtxoTx as UtxoTx;
+pub use chain::Transaction as UtxoTx;
 
 use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl, EstimateFeeMethod, EstimateFeeMode,
                         NativeClient, UnspentInfo, UtxoRpcClientEnum};
@@ -1156,13 +1156,13 @@ impl SwapOps for UtxoCoin {
             self.key_pair.public(),
         );
         let arc = self.clone();
-        let fut = async move {
+        let fut : UtxoTx = async move {
             let fee = try_s!(arc.get_htlc_spend_fee().await);
             let output = TransactionOutput {
                 value: prev_tx.outputs[0].value - fee,
                 script_pubkey: Builder::build_p2pkh(&arc.key_pair.public().address_hash()).to_bytes(),
             };
-            let transaction =
+            let transaction : UtxoTx =
                 try_s!(arc.p2sh_spending_tx(prev_tx, redeem_script.into(), vec![output], script_data, SEQUENCE_FINAL,));
             let tx_fut = arc
                 .rpc_client
