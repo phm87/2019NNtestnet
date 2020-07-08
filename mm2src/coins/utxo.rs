@@ -647,7 +647,7 @@ impl UtxoCoin {
             &try_fus!(Public::from_slice(first_pub0)),
             &try_fus!(Public::from_slice(second_pub0)),
         );
-        let fut: chain::Transaction = async move {
+        let fut: UtxoTx = async move {
             let mut attempts = 0;
             loop {
                 let tx_from_rpc = match selfi
@@ -1156,7 +1156,7 @@ impl SwapOps for UtxoCoin {
             self.key_pair.public(),
         );
         let arc = self.clone();
-        let fut: UtxoTx<UtxoTx> = async move {
+        let fut: UtxoTx = async move {
             let fee = try_s!(arc.get_htlc_spend_fee().await);
             let output = TransactionOutput {
                 value: prev_tx.outputs[0].value - fee,
