@@ -68,6 +68,8 @@ use self::utxo::{utxo_coin_from_conf_and_request, UtxoCoin, UtxoFeeDetails, Utxo
 #[allow(unused_variables)]
 pub mod test_coin;
 pub use self::test_coin::TestCoin;
+pub mod ln;
+pub use self::ln::LnCoin;
 use common::mm_number::MmNumber;
 
 pub trait Transaction: fmt::Debug + 'static {
@@ -432,6 +434,7 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 pub enum MmCoinEnum {
     UtxoCoin(UtxoCoin),
     EthCoin(EthCoin),
+    Ln(LnCoin),
     Test(TestCoin),
 }
 
@@ -447,6 +450,10 @@ impl From<TestCoin> for MmCoinEnum {
     fn from(c: TestCoin) -> MmCoinEnum { MmCoinEnum::Test(c) }
 }
 
+impl From<LnCoin> for MmCoinEnum {
+    fn from(c: LnCoin) -> MmCoinEnum { MmCoinEnum::LnCoin(c) }
+}
+
 // NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
 impl Deref for MmCoinEnum {
     type Target = dyn MmCoin;
@@ -454,6 +461,7 @@ impl Deref for MmCoinEnum {
         match self {
             MmCoinEnum::UtxoCoin(ref c) => c,
             MmCoinEnum::EthCoin(ref c) => c,
+            MmCoinEnum::LnCoin(ref c) => c,
             MmCoinEnum::Test(ref c) => c,
         }
     }
