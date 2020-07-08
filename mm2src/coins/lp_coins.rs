@@ -65,7 +65,7 @@ use self::eth::{eth_coin_from_conf_and_request, EthCoin, EthTxFeeDetails, Signed
 pub mod utxo;
 use self::utxo::{utxo_coin_from_conf_and_request, UtxoCoin, UtxoFeeDetails, UtxoTx};
 pub mod ln;
-use self::ln::{ln_coin_from_conf_and_request, LnCoin, LnTxFeeDetails, LnTx};
+use self::ln::{ln_coin_from_conf_and_request, LnCoin, LnTxFeeDetails, UtxoTx};
 #[doc(hidden)]
 #[allow(unused_variables)]
 pub mod test_coin;
@@ -84,11 +84,9 @@ pub trait Transaction: fmt::Debug + 'static {
 pub enum TransactionEnum {
     UtxoTx(UtxoTx),
     SignedEthTx(SignedEthTx),
-    LnTx(LnTx),
 }
 ifrom!(TransactionEnum, UtxoTx);
 ifrom!(TransactionEnum, SignedEthTx);
-ifrom!(TransactionEnum, LnTx);
 
 // NB: When stable and groked by IDEs, `enum_dispatch` can be used instead of `Deref` to speed things up.
 impl Deref for TransactionEnum {
@@ -97,7 +95,6 @@ impl Deref for TransactionEnum {
         match self {
             TransactionEnum::UtxoTx(ref t) => t,
             TransactionEnum::SignedEthTx(ref t) => t,
-            TransactionEnum::LnTx(ref t) => t,
         }
     }
 }
