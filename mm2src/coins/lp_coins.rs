@@ -64,6 +64,8 @@ pub mod eth;
 use self::eth::{eth_coin_from_conf_and_request, EthCoin, EthTxFeeDetails, SignedEthTx};
 pub mod utxo;
 use self::utxo::{utxo_coin_from_conf_and_request, UtxoCoin, UtxoFeeDetails, UtxoTx};
+pub mod ln;
+use self::ln::{ln_coin_from_conf_and_request, LnCoin, LnTxFeeDetails, LnTx};
 #[doc(hidden)]
 #[allow(unused_variables)]
 pub mod test_coin;
