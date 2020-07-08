@@ -637,7 +637,7 @@ impl UtxoCoin {
         priv_bn_hash: &[u8],
         amount: BigDecimal,
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
-        let tx: UtxoTx<UtxoTx> = try_fus!(deserialize(payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let tx: UtxoTx = try_fus!(deserialize(payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let amount = try_fus!(sat_from_big_decimal(&amount, self.decimals));
         let selfi = self.clone();
 
@@ -647,7 +647,7 @@ impl UtxoCoin {
             &try_fus!(Public::from_slice(first_pub0)),
             &try_fus!(Public::from_slice(second_pub0)),
         );
-        let fut = async move {
+        let fut: UtxoTx = async move {
             let mut attempts = 0;
             loop {
                 let tx_from_rpc = match selfi
