@@ -63,14 +63,14 @@ use std::sync::{Arc, Mutex, Weak};
 use std::thread;
 use std::time::Duration;
 
-pub use chain::Transaction as UtxoTx;
+pub use chain::Transaction as LnTx;
 
 use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl, EstimateFeeMethod, EstimateFeeMode,
-                        NativeClient, UnspentInfo, UtxoRpcClientEnum, LndClient};
+                        NativeClient, UnspentInfo, LnRpcClientEnum, LndClient};
 use super::{CoinTransportMetrics, CoinsContext, FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin,
             RpcClientType, RpcTransportEventHandler, RpcTransportEventHandlerShared, SwapOps, TradeFee, Transaction,
             TransactionDetails, TransactionEnum, TransactionFut, WithdrawFee, WithdrawRequest};
-use crate::ln::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, UtxoRpcClientOps, LndClientImpl};
+use crate::ln::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, LnRpcClientOps, LndClientImpl};
 
 #[cfg(test)] pub mod ln_tests;
 
@@ -110,7 +110,7 @@ fn get_special_folder_path() -> PathBuf {
 #[cfg(feature = "native")]
 fn get_special_folder_path() -> PathBuf { panic!("!windows") }
 
-impl Transaction for UtxoTx {
+impl Transaction for LnTx {
     fn tx_hex(&self) -> Vec<u8> { serialize(self).into() }
 
     fn extract_secret(&self) -> Result<Vec<u8>, String> {
@@ -165,8 +165,8 @@ enum FeePolicy {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "format")]
-enum UtxoAddressFormat {
-    /// Standard UTXO address format.
+enum LnAddressFormat {
+    /// Standard Ln address format.
     /// In Bitcoin Cash context the standard format also known as 'legacy'.
     #[serde(rename = "standard")]
     Standard,
@@ -176,8 +176,8 @@ enum UtxoAddressFormat {
     CashAddress { network: String },
 }
 
-impl Default for UtxoAddressFormat {
-    fn default() -> Self { UtxoAddressFormat::Standard }
+impl Default for LnAddressFormat {
+    fn default() -> Self { LnAddressFormat::Standard }
 }
 
 /// pImpl idiom.
@@ -221,13 +221,13 @@ pub struct LnCoinImpl {
     /// https://komodoplatform.com/security-delayed-proof-of-work-dpow/
     requires_notarization: AtomicBool,
     /// RPC client
-    rpc_client: UtxoRpcClientEnum,
+    rpc_client: LnRpcClientEnum,
     /// ECDSA key pair
     key_pair: KeyPair,
     /// Lock the mutex when we deal with address utxos
     my_address: Address,
-    /// The address format indicates how to parse and display UTXO addresses over RPC calls
-    address_format: UtxoAddressFormat,
+    /// The address format indicates how to parse and display Ln addresses over RPC calls
+    address_format: LnAddressFormat,
     /// Is current coin KMD asset chain?
     /// https://komodoplatform.atlassian.net/wiki/spaces/KPSD/pages/71729160/What+is+a+Parallel+Chain+Asset+Chain
     asset_chain: bool,
@@ -323,7 +323,7 @@ impl LnCoinImpl {
         tx: &[u8],
         search_from_block: u64,
     ) -> Result<Option<FoundSwapTxSpend>, String> {
-        let tx: UtxoTx = try_s!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
+        let tx: LnTx = try_s!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
         let script = payment_script(time_lock, secret_hash, first_pub, second_pub);
         let expected_script_pubkey = Builder::build_p2sh(&dhash160(&script)).to_bytes();
         if tx.outputs[0].script_pubkey != expected_script_pubkey {
@@ -361,12 +361,12 @@ impl LnCoinImpl {
 
     pub fn my_public_key(&self) -> &Public { self.key_pair.public() }
 
-    pub fn rpc_client(&self) -> &UtxoRpcClientEnum { &self.rpc_client }
+    pub fn rpc_client(&self) -> &LnRpcClientEnum { &self.rpc_client }
 
     pub fn display_address(&self, address: &Address) -> Result<String, String> {
         match &self.address_format {
-            UtxoAddressFormat::Standard => Ok(address.to_string()),
-            UtxoAddressFormat::CashAddress { network } => address
+            LnAddressFormat::Standard => Ok(address.to_string()),
+            LnAddressFormat::CashAddress { network } => address
                 .to_cashaddress(&network, self.pub_addr_prefix, self.p2sh_addr_prefix)
                 .and_then(|cashaddress| cashaddress.encode()),
         }
@@ -517,7 +517,7 @@ fn sign_tx(
     prev_script: Script,
     signature_version: SignatureVersion,
     fork_id: u32,
-) -> Result<UtxoTx, String> {
+) -> Result<LnTx, String> {
     let mut signed_inputs = vec![];
     for (i, _) in unsigned.inputs.iter().enumerate() {
         signed_inputs.push(try_s!(p2pkh_spend(
@@ -529,7 +529,7 @@ fn sign_tx(
             fork_id
         )));
     }
-    Ok(UtxoTx {
+    Ok(LnTx {
         inputs: signed_inputs,
         n_time: unsigned.n_time,
         outputs: unsigned.outputs.clone(),
@@ -591,7 +591,7 @@ macro_rules! true_or_err {
     };
 }
 
-async fn send_outputs_from_my_address_impl(coin: LnCoin, outputs: Vec<TransactionOutput>) -> Result<UtxoTx, String> {
+async fn send_outputs_from_my_address_impl(coin: LnCoin, outputs: Vec<TransactionOutput>) -> Result<LnTx, String> {
     let _utxo_lock = UTXO_LOCK.lock().await;
     let unspents = try_s!(
         coin.rpc_client
@@ -777,7 +777,7 @@ impl LnCoin {
             tx_fee = match &coin_tx_fee {
                 ActualTxFee::Fixed(f) => *f,
                 ActualTxFee::Dynamic(f) => {
-                    let transaction = UtxoTx::from(tx.clone());
+                    let transaction = LnTx::from(tx.clone());
                     let transaction_bytes = serialize(&transaction);
                     // 2 bytes are used to indicate the length of signature and pubkey
                     // total is 107
@@ -918,12 +918,12 @@ impl LnCoin {
 
     fn p2sh_spending_tx(
         &self,
-        prev_transaction: UtxoTx,
+        prev_transaction: LnTx,
         redeem_script: Bytes,
         outputs: Vec<TransactionOutput>,
         script_data: Script,
         sequence: u32,
-    ) -> Result<UtxoTx, String> {
+    ) -> Result<LnTx, String> {
         // https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.11.2.md#bip113-mempool-only-locktime-enforcement-using-getmediantimepast
         // Implication for users: GetMedianTimePast() always trails behind the current time,
         // so a transaction locktime set to the present time will be rejected by nodes running this
@@ -974,7 +974,7 @@ impl LnCoin {
             self.signature_version,
             self.fork_id
         ));
-        Ok(UtxoTx {
+        Ok(LnTx {
             version: unsigned.version,
             n_time: unsigned.n_time,
             overwintered: unsigned.overwintered,
@@ -1060,10 +1060,10 @@ impl SwapOps for LnCoin {
             script_pubkey: secret_hash_op_return_script,
         };
         let send_fut = match &self.rpc_client {
-            UtxoRpcClientEnum::Electrum(_) => {
+            LnRpcClientEnum::Electrum(_) => {
                 Either::A(self.send_outputs_from_my_address(vec![htlc_out, secret_hash_op_return_out]))
             },
-            UtxoRpcClientEnum::Native(client) => {
+            LnRpcClientEnum::Native(client) => {
                 let payment_addr = Address {
                     checksum_type: self.checksum_type,
                     hash: dhash160(&redeem_script),
@@ -1079,7 +1079,7 @@ impl SwapOps for LnCoin {
                         .and_then(move |_| arc.send_outputs_from_my_address(vec![htlc_out, secret_hash_op_return_out])),
                 )
             },
-            UtxoRpcClientEnum::LndClient(client) => {
+            LnRpcClientEnum::LndClient(client) => {
                 let payment_addr = Address {
                     checksum_type: self.checksum_type,
                     hash: dhash160(&redeem_script),
@@ -1130,10 +1130,10 @@ impl SwapOps for LnCoin {
             script_pubkey: secret_hash_op_return_script,
         };
         let send_fut = match &self.rpc_client {
-            UtxoRpcClientEnum::Electrum(_) => {
+            LnRpcClientEnum::Electrum(_) => {
                 Either::A(self.send_outputs_from_my_address(vec![htlc_out, secret_hash_op_return_out]))
             },
-            UtxoRpcClientEnum::Native(client) => {
+            LnRpcClientEnum::Native(client) => {
                 let payment_addr = Address {
                     checksum_type: self.checksum_type,
                     hash: dhash160(&redeem_script),
@@ -1160,7 +1160,7 @@ impl SwapOps for LnCoin {
         taker_pub: &[u8],
         secret: &[u8],
     ) -> TransactionFut {
-        let prev_tx: UtxoTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let prev_tx: LnTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let script_data = Builder::default()
             .push_data(secret)
             .push_opcode(Opcode::OP_0)
@@ -1197,7 +1197,7 @@ impl SwapOps for LnCoin {
         maker_pub: &[u8],
         secret: &[u8],
     ) -> TransactionFut {
-        let prev_tx: UtxoTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let prev_tx: LnTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let script_data = Builder::default()
             .push_data(secret)
             .push_opcode(Opcode::OP_0)
@@ -1234,7 +1234,7 @@ impl SwapOps for LnCoin {
         maker_pub: &[u8],
         secret_hash: &[u8],
     ) -> TransactionFut {
-        let prev_tx: UtxoTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let prev_tx: LnTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let script_data = Builder::default().push_opcode(Opcode::OP_1).into_script();
         let redeem_script = payment_script(
             time_lock,
@@ -1273,7 +1273,7 @@ impl SwapOps for LnCoin {
         taker_pub: &[u8],
         secret_hash: &[u8],
     ) -> TransactionFut {
-        let prev_tx: UtxoTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let prev_tx: LnTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let script_data = Builder::default().push_opcode(Opcode::OP_1).into_script();
         let redeem_script = payment_script(
             time_lock,
@@ -1313,7 +1313,7 @@ impl SwapOps for LnCoin {
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
         let selfi = self.clone();
         let tx = match fee_tx {
-            TransactionEnum::UtxoTx(tx) => tx.clone(),
+            TransactionEnum::LnTx(tx) => tx.clone(),
             _ => panic!(),
         };
         let amount = amount.clone();
@@ -1424,18 +1424,18 @@ impl SwapOps for LnCoin {
         let selfi = self.clone();
         let fut = async move {
             match &selfi.rpc_client {
-                UtxoRpcClientEnum::Electrum(client) => {
+                LnRpcClientEnum::Electrum(client) => {
                     let history = try_s!(client.scripthash_get_history(&hex::encode(script_hash)).compat().await);
                     match history.first() {
                         Some(item) => {
                             let tx_bytes = try_s!(client.get_transaction_bytes(item.tx_hash.clone()).compat().await);
-                            let tx: UtxoTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+                            let tx: LnTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
                             Ok(Some(tx.into()))
                         },
                         None => Ok(None),
                     }
                 },
-                UtxoRpcClientEnum::Native(client) => {
+                LnRpcClientEnum::Native(client) => {
                     let target_addr = Address {
                         t_addr_prefix: selfi.p2sh_t_addr_prefix,
                         prefix: selfi.p2sh_addr_prefix,
@@ -1447,7 +1447,7 @@ impl SwapOps for LnCoin {
                     for item in received_by_addr {
                         if item.address == target_addr && !item.txids.is_empty() {
                             let tx_bytes = try_s!(client.get_transaction_bytes(item.txids[0].clone()).compat().await);
-                            let tx: UtxoTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+                            let tx: LnTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
                             return Ok(Some(tx.into()));
                         }
                     }
@@ -1528,13 +1528,13 @@ impl MarketCoinOps for LnCoin {
         wait_until: u64,
         check_every: u64,
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
-        let tx: UtxoTx = try_fus!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
+        let tx: LnTx = try_fus!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
         self.rpc_client
             .wait_for_confirmations(&tx, confirmations as u32, requires_nota, wait_until, check_every)
     }
 
     fn wait_for_tx_spend(&self, tx_bytes: &[u8], wait_until: u64, from_block: u64) -> TransactionFut {
-        let tx: UtxoTx = try_fus!(deserialize(tx_bytes).map_err(|e| ERRL!("{:?}", e)));
+        let tx: LnTx = try_fus!(deserialize(tx_bytes).map_err(|e| ERRL!("{:?}", e)));
         let vout = 0;
         let client = self.rpc_client.clone();
         let fut = async move {
@@ -1562,7 +1562,7 @@ impl MarketCoinOps for LnCoin {
     }
 
     fn tx_enum_from_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
-        let transaction: UtxoTx = try_s!(deserialize(bytes).map_err(|err| format!("{:?}", err)));
+        let transaction: LnTx = try_s!(deserialize(bytes).map_err(|err| format!("{:?}", err)));
         Ok(transaction.into())
     }
 
@@ -1586,8 +1586,8 @@ impl MarketCoinOps for LnCoin {
 
 async fn withdraw_impl(coin: LnCoin, req: WithdrawRequest) -> Result<TransactionDetails, String> {
     let to = match &coin.address_format {
-        UtxoAddressFormat::Standard => try_s!(Address::from_str(&req.to)),
-        UtxoAddressFormat::CashAddress { .. } => try_s!(Address::from_cashaddress(
+        LnAddressFormat::Standard => try_s!(Address::from_str(&req.to)),
+        LnAddressFormat::CashAddress { .. } => try_s!(Address::from_cashaddress(
             &req.to,
             coin.checksum_type,
             coin.pub_addr_prefix,
@@ -1756,7 +1756,7 @@ impl MmCoin for LnCoin {
             }
 
             let tx_ids: Vec<(H256Json, u64)> = match &self.rpc_client {
-                UtxoRpcClientEnum::Native(client) => {
+                LnRpcClientEnum::Native(client) => {
                     let mut from = 0;
                     let mut all_transactions = vec![];
                     loop {
@@ -1800,7 +1800,7 @@ impl MmCoin for LnCoin {
                         })
                         .collect()
                 },
-                UtxoRpcClientEnum::Electrum(client) => {
+                LnRpcClientEnum::Electrum(client) => {
                     let script = Builder::build_p2pkh(&self.my_address.hash);
                     let script_hash = electrum_script_hash(&script);
 
@@ -1956,8 +1956,8 @@ impl MmCoin for LnCoin {
         let selfi = self.clone();
         let fut = async move {
             let verbose_tx = try_s!(selfi.rpc_client.get_verbose_transaction(hash).compat().await);
-            let tx: UtxoTx = try_s!(deserialize(verbose_tx.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
-            let mut input_transactions: HashMap<&H256, UtxoTx> = HashMap::new();
+            let tx: LnTx = try_s!(deserialize(verbose_tx.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+            let mut input_transactions: HashMap<&H256, LnTx> = HashMap::new();
             let mut input_amount = 0;
             let mut output_amount = 0;
             let mut from_addresses = vec![];
@@ -1980,7 +1980,7 @@ impl MmCoin for LnCoin {
                                 .compat()
                                 .await
                         );
-                        let prev_tx: UtxoTx =
+                        let prev_tx: LnTx =
                             try_s!(deserialize(prev.as_slice()).map_err(|e| ERRL!("{:?}, tx: {:?}", e, prev_hash)));
                         e.insert(prev_tx)
                     },
@@ -2303,7 +2303,7 @@ pub async fn ln_coin_from_conf_and_request(
     };
 
     let address_format = if conf["address_format"].is_null() {
-        UtxoAddressFormat::Standard
+        LnAddressFormat::Standard
     } else {
         try_s!(json::from_value(conf["address_format"].clone()))
     };
@@ -2332,9 +2332,9 @@ pub async fn ln_coin_from_conf_and_request(
                     event_handlers,
                 });
 
-                UtxoRpcClientEnum::Native(NativeClient(client))
+                LnRpcClientEnum::Native(NativeClient(client))
             } else {
-                return ERR!("Native UTXO mode is not available in non-native build");
+                return ERR!("Native Ln mode is not available in non-native build");
             }
         },
         Some("electrum") => {
@@ -2375,7 +2375,7 @@ pub async fn ln_coin_from_conf_and_request(
             spawn_electrum_version_loop(weak_client, on_connect_rx, client_name);
 
             try_s!(wait_for_protocol_version_checked(&client).await);
-            UtxoRpcClientEnum::Electrum(ElectrumClient(client))
+            LnRpcClientEnum::Electrum(ElectrumClient(client))
         },
         Some("Lnd") => {
             if cfg!(feature = "native") {
@@ -2400,9 +2400,9 @@ pub async fn ln_coin_from_conf_and_request(
                     event_handlers,
                 });
 
-                UtxoRpcClientEnum::Lnd(LndClient(client))
+                LnRpcClientEnum::Lnd(LndClient(client))
             } else {
-                return ERR!("Native UTXO mode is not available in non-native build (tricked for LN)");
+                return ERR!("Native Ln mode is not available in non-native build (tricked for LN)");
             }
         }
         _ => return ERR!("utxo_coin_from_conf_and_request should be called only by enable or electrum requests"),
@@ -2415,8 +2415,8 @@ pub async fn ln_coin_from_conf_and_request(
         None => TxFee::Fixed(1000),
         Some(0) => {
             let fee_method = match &rpc_client {
-                UtxoRpcClientEnum::Electrum(_) => EstimateFeeMethod::Standard,
-                UtxoRpcClientEnum::Native(client) => try_s!(client.detect_fee_method().compat().await),
+                LnRpcClientEnum::Electrum(_) => EstimateFeeMethod::Standard,
+                LnRpcClientEnum::Native(client) => try_s!(client.detect_fee_method().compat().await),
             };
             TxFee::Dynamic(fee_method)
         },
