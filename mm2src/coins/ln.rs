@@ -1956,8 +1956,8 @@ impl MmCoin for LnCoin {
         let selfi = self.clone();
         let fut = async move {
             let verbose_tx = try_s!(selfi.rpc_client.get_verbose_transaction(hash).compat().await);
-            let tx: LnTx = try_s!(deserialize(verbose_tx.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
-            let mut input_transactions: HashMap<&H256, LnTx> = HashMap::new();
+            let tx: UtxoTx = try_s!(deserialize(verbose_tx.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+            let mut input_transactions: HashMap<&H256, UtxoTx> = HashMap::new();
             let mut input_amount = 0;
             let mut output_amount = 0;
             let mut from_addresses = vec![];
@@ -1980,7 +1980,7 @@ impl MmCoin for LnCoin {
                                 .compat()
                                 .await
                         );
-                        let prev_tx: LnTx =
+                        let prev_tx: UtxoTx =
                             try_s!(deserialize(prev.as_slice()).map_err(|e| ERRL!("{:?}, tx: {:?}", e, prev_hash)));
                         e.insert(prev_tx)
                     },
