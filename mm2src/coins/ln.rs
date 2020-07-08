@@ -63,7 +63,7 @@ use std::sync::{Arc, Mutex, Weak};
 use std::thread;
 use std::time::Duration;
 
-pub use chain::Transaction as LnTx;
+pub use chain::Transaction as UtxoTx;
 
 use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl, EstimateFeeMethod, EstimateFeeMode,
                         NativeClient, UnspentInfo, LnRpcClientEnum, LndClient};
@@ -110,7 +110,7 @@ fn get_special_folder_path() -> PathBuf {
 #[cfg(feature = "native")]
 fn get_special_folder_path() -> PathBuf { panic!("!windows") }
 
-impl Transaction for LnTx {
+impl Transaction for UtxoTx {
     fn tx_hex(&self) -> Vec<u8> { serialize(self).into() }
 
     fn extract_secret(&self) -> Result<Vec<u8>, String> {
@@ -323,7 +323,7 @@ impl LnCoinImpl {
         tx: &[u8],
         search_from_block: u64,
     ) -> Result<Option<FoundSwapTxSpend>, String> {
-        let tx: LnTx = try_s!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
+        let tx: UtxoTx = try_s!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
         let script = payment_script(time_lock, secret_hash, first_pub, second_pub);
         let expected_script_pubkey = Builder::build_p2sh(&dhash160(&script)).to_bytes();
         if tx.outputs[0].script_pubkey != expected_script_pubkey {
@@ -517,7 +517,7 @@ fn sign_tx(
     prev_script: Script,
     signature_version: SignatureVersion,
     fork_id: u32,
-) -> Result<LnTx, String> {
+) -> Result<UtxoTx, String> {
     let mut signed_inputs = vec![];
     for (i, _) in unsigned.inputs.iter().enumerate() {
         signed_inputs.push(try_s!(p2pkh_spend(
@@ -529,7 +529,7 @@ fn sign_tx(
             fork_id
         )));
     }
-    Ok(LnTx {
+    Ok(UtxoTx {
         inputs: signed_inputs,
         n_time: unsigned.n_time,
         outputs: unsigned.outputs.clone(),
@@ -591,7 +591,7 @@ macro_rules! true_or_err {
     };
 }
 
-async fn send_outputs_from_my_address_impl(coin: LnCoin, outputs: Vec<TransactionOutput>) -> Result<LnTx, String> {
+async fn send_outputs_from_my_address_impl(coin: LnCoin, outputs: Vec<TransactionOutput>) -> Result<UtxoTx, String> {
     let _utxo_lock = UTXO_LOCK.lock().await;
     let unspents = try_s!(
         coin.rpc_client
@@ -777,7 +777,7 @@ impl LnCoin {
             tx_fee = match &coin_tx_fee {
                 ActualTxFee::Fixed(f) => *f,
                 ActualTxFee::Dynamic(f) => {
-                    let transaction = LnTx::from(tx.clone());
+                    let transaction = UtxoTx::from(tx.clone());
                     let transaction_bytes = serialize(&transaction);
                     // 2 bytes are used to indicate the length of signature and pubkey
                     // total is 107
@@ -918,12 +918,12 @@ impl LnCoin {
 
     fn p2sh_spending_tx(
         &self,
-        prev_transaction: LnTx,
+        prev_transaction: UtxoTx,
         redeem_script: Bytes,
         outputs: Vec<TransactionOutput>,
         script_data: Script,
         sequence: u32,
-    ) -> Result<LnTx, String> {
+    ) -> Result<UtxoTx, String> {
         // https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-0.11.2.md#bip113-mempool-only-locktime-enforcement-using-getmediantimepast
         // Implication for users: GetMedianTimePast() always trails behind the current time,
         // so a transaction locktime set to the present time will be rejected by nodes running this
@@ -974,7 +974,7 @@ impl LnCoin {
             self.signature_version,
             self.fork_id
         ));
-        Ok(LnTx {
+        Ok(UtxoTx {
             version: unsigned.version,
             n_time: unsigned.n_time,
             overwintered: unsigned.overwintered,
@@ -1160,7 +1160,7 @@ impl SwapOps for LnCoin {
         taker_pub: &[u8],
         secret: &[u8],
     ) -> TransactionFut {
-        let prev_tx: LnTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let prev_tx: UtxoTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let script_data = Builder::default()
             .push_data(secret)
             .push_opcode(Opcode::OP_0)
@@ -1197,7 +1197,7 @@ impl SwapOps for LnCoin {
         maker_pub: &[u8],
         secret: &[u8],
     ) -> TransactionFut {
-        let prev_tx: LnTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let prev_tx: UtxoTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let script_data = Builder::default()
             .push_data(secret)
             .push_opcode(Opcode::OP_0)
@@ -1234,7 +1234,7 @@ impl SwapOps for LnCoin {
         maker_pub: &[u8],
         secret_hash: &[u8],
     ) -> TransactionFut {
-        let prev_tx: LnTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let prev_tx: UtxoTx = try_fus!(deserialize(taker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let script_data = Builder::default().push_opcode(Opcode::OP_1).into_script();
         let redeem_script = payment_script(
             time_lock,
@@ -1273,7 +1273,7 @@ impl SwapOps for LnCoin {
         taker_pub: &[u8],
         secret_hash: &[u8],
     ) -> TransactionFut {
-        let prev_tx: LnTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let prev_tx: UtxoTx = try_fus!(deserialize(maker_payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let script_data = Builder::default().push_opcode(Opcode::OP_1).into_script();
         let redeem_script = payment_script(
             time_lock,
@@ -1313,7 +1313,7 @@ impl SwapOps for LnCoin {
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
         let selfi = self.clone();
         let tx = match fee_tx {
-            TransactionEnum::LnTx(tx) => tx.clone(),
+            TransactionEnum::UtxoTx(tx) => tx.clone(),
             _ => panic!(),
         };
         let amount = amount.clone();
@@ -1429,7 +1429,7 @@ impl SwapOps for LnCoin {
                     match history.first() {
                         Some(item) => {
                             let tx_bytes = try_s!(client.get_transaction_bytes(item.tx_hash.clone()).compat().await);
-                            let tx: LnTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+                            let tx: UtxoTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
                             Ok(Some(tx.into()))
                         },
                         None => Ok(None),
@@ -1447,7 +1447,7 @@ impl SwapOps for LnCoin {
                     for item in received_by_addr {
                         if item.address == target_addr && !item.txids.is_empty() {
                             let tx_bytes = try_s!(client.get_transaction_bytes(item.txids[0].clone()).compat().await);
-                            let tx: LnTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+                            let tx: UtxoTx = try_s!(deserialize(tx_bytes.0.as_slice()).map_err(|e| ERRL!("{:?}", e)));
                             return Ok(Some(tx.into()));
                         }
                     }
@@ -1528,13 +1528,13 @@ impl MarketCoinOps for LnCoin {
         wait_until: u64,
         check_every: u64,
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
-        let tx: LnTx = try_fus!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
+        let tx: UtxoTx = try_fus!(deserialize(tx).map_err(|e| ERRL!("{:?}", e)));
         self.rpc_client
             .wait_for_confirmations(&tx, confirmations as u32, requires_nota, wait_until, check_every)
     }
 
     fn wait_for_tx_spend(&self, tx_bytes: &[u8], wait_until: u64, from_block: u64) -> TransactionFut {
-        let tx: LnTx = try_fus!(deserialize(tx_bytes).map_err(|e| ERRL!("{:?}", e)));
+        let tx: UtxoTx = try_fus!(deserialize(tx_bytes).map_err(|e| ERRL!("{:?}", e)));
         let vout = 0;
         let client = self.rpc_client.clone();
         let fut = async move {
@@ -1562,7 +1562,7 @@ impl MarketCoinOps for LnCoin {
     }
 
     fn tx_enum_from_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> {
-        let transaction: LnTx = try_s!(deserialize(bytes).map_err(|err| format!("{:?}", err)));
+        let transaction: UtxoTx = try_s!(deserialize(bytes).map_err(|err| format!("{:?}", err)));
         Ok(transaction.into())
     }
 
@@ -1956,8 +1956,8 @@ impl MmCoin for LnCoin {
         let selfi = self.clone();
         let fut = async move {
             let verbose_tx = try_s!(selfi.rpc_client.get_verbose_transaction(hash).compat().await);
-            let tx: LnTx = try_s!(deserialize(verbose_tx.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
-            let mut input_transactions: HashMap<&H256, LnTx> = HashMap::new();
+            let tx: UtxoTx = try_s!(deserialize(verbose_tx.hex.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+            let mut input_transactions: HashMap<&H256, UtxoTx> = HashMap::new();
             let mut input_amount = 0;
             let mut output_amount = 0;
             let mut from_addresses = vec![];
@@ -1980,7 +1980,7 @@ impl MmCoin for LnCoin {
                                 .compat()
                                 .await
                         );
-                        let prev_tx: LnTx =
+                        let prev_tx: UtxoTx =
                             try_s!(deserialize(prev.as_slice()).map_err(|e| ERRL!("{:?}, tx: {:?}", e, prev_hash)));
                         e.insert(prev_tx)
                     },
