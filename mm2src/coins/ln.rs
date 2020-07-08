@@ -70,7 +70,7 @@ use self::rpc_clients::{electrum_script_hash, ElectrumClient, ElectrumClientImpl
 use super::{CoinTransportMetrics, CoinsContext, FoundSwapTxSpend, HistorySyncState, MarketCoinOps, MmCoin,
             RpcClientType, RpcTransportEventHandler, RpcTransportEventHandlerShared, SwapOps, TradeFee, Transaction,
             TransactionDetails, TransactionEnum, TransactionFut, WithdrawFee, WithdrawRequest};
-use crate::utxo::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, UtxoRpcClientOps};
+use crate::ln::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, UtxoRpcClientOps};
 
 #[cfg(test)] pub mod ln_tests;
 
