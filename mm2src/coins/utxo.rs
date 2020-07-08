@@ -1156,7 +1156,7 @@ impl SwapOps for UtxoCoin {
             self.key_pair.public(),
         );
         let arc = self.clone();
-        let fut : UtxoTx = async move {
+        let fut = async move {
             let fee = try_s!(arc.get_htlc_spend_fee().await);
             let output = TransactionOutput {
                 value: prev_tx.outputs[0].value - fee,
