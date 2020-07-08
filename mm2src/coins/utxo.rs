@@ -637,7 +637,7 @@ impl UtxoCoin {
         priv_bn_hash: &[u8],
         amount: BigDecimal,
     ) -> Box<dyn Future<Item = (), Error = String> + Send> {
-        let tx: UtxoTx = try_fus!(deserialize(payment_tx).map_err(|e| ERRL!("{:?}", e)));
+        let tx: UtxoTx<UtxoTx> = try_fus!(deserialize(payment_tx).map_err(|e| ERRL!("{:?}", e)));
         let amount = try_fus!(sat_from_big_decimal(&amount, self.decimals));
         let selfi = self.clone();
 
@@ -1156,13 +1156,13 @@ impl SwapOps for UtxoCoin {
             self.key_pair.public(),
         );
         let arc = self.clone();
-        let fut = async move {
+        let fut: UtxoTx<UtxoTx> = async move {
             let fee = try_s!(arc.get_htlc_spend_fee().await);
             let output = TransactionOutput {
                 value: prev_tx.outputs[0].value - fee,
                 script_pubkey: Builder::build_p2pkh(&arc.key_pair.public().address_hash()).to_bytes(),
             };
-            let transaction : UtxoTx =
+            let transaction: UtxoTx =
                 try_s!(arc.p2sh_spending_tx(prev_tx, redeem_script.into(), vec![output], script_data, SEQUENCE_FINAL,));
             let tx_fut = arc
                 .rpc_client
