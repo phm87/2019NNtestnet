@@ -101,7 +101,7 @@ impl Clone for LnRpcClientEnum {
     }
 }
 
-impl UtxoRpcClientEnum {
+impl LnRpcClientEnum {
     pub fn wait_for_confirmations(
         &self,
         tx: &LnTx,
@@ -1427,10 +1427,10 @@ impl LnRpcClientOps for ElectrumClient {
 
     fn find_output_spend(
         &self,
-        tx: &UtxoTx,
+        tx: &LnTx,
         vout: usize,
         _from_block: u64,
-    ) -> Box<dyn Future<Item = Option<UtxoTx>, Error = String> + Send> {
+    ) -> Box<dyn Future<Item = Option<LnTx>, Error = String> + Send> {
         let selfi = self.clone();
         let script_hash = hex::encode(electrum_script_hash(&tx.outputs[vout].script_pubkey));
         let tx = tx.clone();
@@ -1444,7 +1444,7 @@ impl LnRpcClientOps for ElectrumClient {
             for item in history.iter() {
                 let transaction = try_s!(selfi.get_transaction_bytes(item.tx_hash.clone()).compat().await);
 
-                let maybe_spend_tx: UtxoTx = try_s!(deserialize(transaction.as_slice()).map_err(|e| ERRL!("{:?}", e)));
+                let maybe_spend_tx: LnTx = try_s!(deserialize(transaction.as_slice()).map_err(|e| ERRL!("{:?}", e)));
 
                 for input in maybe_spend_tx.inputs.iter() {
                     if input.previous_output.hash == tx.hash() && input.previous_output.index == vout as u32 {
