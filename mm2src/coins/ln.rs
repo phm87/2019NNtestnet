@@ -2393,7 +2393,7 @@ pub async fn ln_coin_from_conf_and_request(
                         CoinTransportMetrics::new(ctx.metrics.weak(), ticker.to_owned(), RpcClientType::Lnd)
                             .into_shared(),
                     ];
-                let client = Arc::new(LnClientImpl {
+                let client = Arc::new(LndClientImpl {
                     coin_ticker: ticker.to_string(),
                     uri: fomat!("http://127.0.0.1:"(rpc_port)),
                     auth: format!("Basic {}", base64_encode(&auth_str, URL_SAFE)),
