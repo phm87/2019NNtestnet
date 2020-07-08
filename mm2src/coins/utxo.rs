@@ -647,7 +647,7 @@ impl UtxoCoin {
             &try_fus!(Public::from_slice(first_pub0)),
             &try_fus!(Public::from_slice(second_pub0)),
         );
-        let fut: UtxoTx = async move {
+        let fut: chain::transaction::Transaction = async move {
             let mut attempts = 0;
             loop {
                 let tx_from_rpc = match selfi
