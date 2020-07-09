@@ -25,6 +25,7 @@ use serialization::{deserialize, serialize};
 use crate::utxo::payment_script;
 pub use chain::Transaction as UtxoTx;
 use std::ops::Deref;
+use crate::utxo::rpc_clients::UtxoRpcClientEnum;
 
 /// Dummy coin struct used in tests which functions are unimplemented but then mocked
 /// in specific test to emulate the required behavior
