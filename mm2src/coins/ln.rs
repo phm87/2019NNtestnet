@@ -23,7 +23,8 @@ use crate::utxo::KILO_BYTE;
 use crate::utxo::sat_from_big_decimal;
 use serialization::{deserialize, serialize};
 use crate::utxo::payment_script;
-
+pub use chain::Transaction as UtxoTx;
+use std::ops::Deref;
 
 /// Dummy coin struct used in tests which functions are unimplemented but then mocked
 /// in specific test to emulate the required behavior
@@ -88,7 +89,7 @@ pub struct LnCoinImpl {
     /// https://komodoplatform.com/security-delayed-proof-of-work-dpow/
     requires_notarization: AtomicBool,
     /// RPC client
-    rpc_client: LnRpcClientEnum,
+    rpc_client: UtxoRpcClientEnum,
     /// ECDSA key pair
     key_pair: KeyPair,
     /// Lock the mutex when we deal with address utxos
@@ -228,7 +229,7 @@ impl LnCoinImpl {
 
     pub fn my_public_key(&self) -> &Public { self.key_pair.public() }
 
-    pub fn rpc_client(&self) -> &LnRpcClientEnum { &self.rpc_client }
+    pub fn rpc_client(&self) -> &UtxoRpcClientEnum { &self.rpc_client }
 
     pub fn display_address(&self, address: &Address) -> Result<String, String> {
         match &self.address_format {
