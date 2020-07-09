@@ -74,8 +74,8 @@ use crate::utxo::rpc_clients::{ElectrumRpcRequest, NativeClientImpl, UtxoRpcClie
 
 #[cfg(test)] pub mod utxo_tests;
 
-const SWAP_TX_SPEND_SIZE: u64 = 305;
-const KILO_BYTE: u64 = 1000;
+pub const SWAP_TX_SPEND_SIZE: u64 = 305;
+pub const KILO_BYTE: u64 = 1000;
 /// https://bitcoin.stackexchange.com/a/77192
 const MAX_DER_SIGNATURE_LEN: usize = 72;
 const COMPRESSED_PUBKEY_LEN: usize = 33;
@@ -381,7 +381,7 @@ impl UtxoCoinImpl {
     }
 }
 
-fn payment_script(time_lock: u32, secret_hash: &[u8], pub_0: &Public, pub_1: &Public) -> Script {
+pub fn payment_script(time_lock: u32, secret_hash: &[u8], pub_0: &Public, pub_1: &Public) -> Script {
     let builder = Builder::default();
     builder
         .push_opcode(Opcode::OP_IF)
@@ -551,7 +551,7 @@ fn sign_tx(
 }
 
 /// Denominate BigDecimal amount of coin units to satoshis
-fn sat_from_big_decimal(amount: &BigDecimal, decimals: u8) -> Result<u64, String> {
+pub fn sat_from_big_decimal(amount: &BigDecimal, decimals: u8) -> Result<u64, String> {
     (amount * BigDecimal::from(10u64.pow(decimals as u32)))
         .to_u64()
         .ok_or(ERRL!(
