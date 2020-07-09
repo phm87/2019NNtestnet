@@ -139,7 +139,7 @@ pub struct AdditionalTxData {
 
 /// The fee set from coins config
 #[derive(Debug)]
-enum TxFee {
+pub enum TxFee {
     /// Tell the coin that it has fixed tx fee not depending on transaction size
     Fixed(u64),
     /// Tell the coin that it should request the fee from daemon RPC and calculate it relying on tx size
@@ -148,7 +148,7 @@ enum TxFee {
 
 /// The actual "runtime" fee that is received from RPC in case of dynamic calculation
 #[derive(Debug)]
-enum ActualTxFee {
+pub enum ActualTxFee {
     /// fixed tx fee not depending on transaction size
     Fixed(u64),
     /// fee amount per Kbyte received from coin RPC
