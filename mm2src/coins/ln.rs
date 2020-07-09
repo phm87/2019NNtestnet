@@ -276,11 +276,15 @@ impl From<LnCoinImpl> for LnCoin {
 impl MarketCoinOps for LnCoin {
     fn ticker(&self) -> &str { &self.ticker[..] }
 
-    fn my_address(&self) -> Result<String, String> { unimplemented!() }
+    fn my_address(&self) -> Result<String, String> { unimplemented!() 
+            // https://localhost:8080/v1/getinfo
+            // identity_pubkey
+            // https://api.lightning.community/#v1-getinfo
+            }
 
     fn my_balance(&self) -> Box<dyn Future<Item = BigDecimal, Error = String> + Send> { unimplemented!()
             // API REST call to LND for onchain balance: https://localhost:8080/v1/balance/blockchain
-            // /v1/balance/channels
+            //                      for offchain balance: /v1/balance/channels
             // https://api.lightning.community/#v1-balance-channels
             }
 
@@ -306,7 +310,11 @@ impl MarketCoinOps for LnCoin {
 
     fn tx_enum_from_bytes(&self, bytes: &[u8]) -> Result<TransactionEnum, String> { unimplemented!() }
 
-    fn current_block(&self) -> Box<dyn Future<Item = u64, Error = String> + Send> { unimplemented!() }
+    fn current_block(&self) -> Box<dyn Future<Item = u64, Error = String> + Send> { unimplemented!() 
+            // https://localhost:8080/v1/getinfo
+            // identity_pubkey
+            // https://api.lightning.community/#v1-getinfo
+            }
 
     fn address_from_pubkey_str(&self, pubkey: &str) -> Result<String, String> { unimplemented!() }
 
@@ -445,7 +453,7 @@ impl SwapOps for LnCoin {
 #[mockable]
 #[allow(clippy::forget_ref, clippy::forget_copy)]
 impl MmCoin for LnCoin {
-    fn is_asset_chain(&self) -> bool { unimplemented!() }
+    fn is_asset_chain(&self) -> bool { false }
 
     fn can_i_spend_other_payment(&self) -> Box<dyn Future<Item = (), Error = String> + Send> { unimplemented!() }
 
@@ -466,7 +474,7 @@ impl MmCoin for LnCoin {
     /// Get fee to be paid per 1 swap transaction
     fn get_trade_fee(&self) -> Box<dyn Future<Item = TradeFee, Error = String> + Send> { unimplemented!() }
 
-    fn required_confirmations(&self) -> u64 { 1 }
+    fn required_confirmations(&self) -> u64 { 1 } // Maybe 0 on LN side ? Safer but maybe not mandatory
 
     fn requires_notarization(&self) -> bool { false }
 
