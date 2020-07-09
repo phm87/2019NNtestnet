@@ -6,11 +6,24 @@ use common::mm_ctx::MmArc;
 use futures01::Future;
 use mocktopus::macros::*;
 
-use utxo::TxFee;
-use utxo::ActualTxFee;
+use crate::utxo::TxFee;
+use crate::utxo::ActualTxFee;
 use keys::{Address, KeyPair, Private, Public, Secret, Type};
 use script::{Builder, Opcode, Script, ScriptAddress, SignatureVersion, TransactionInputSigner,
              UnsignedTransactionInput};
+
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering as AtomicOrderding};
+use std::sync::{Arc, Mutex, Weak};
+pub use bitcrypto::{dhash160, sha256, ChecksumType};
+use futures::core_reexport::num::NonZeroU64;
+use crate::utxo::rpc_clients::EstimateFeeMode;
+use common::jsonrpc_client::JsonRpcError;
+use crate::utxo::SWAP_TX_SPEND_SIZE;
+use crate::utxo::KILO_BYTE;
+use crate::utxo::sat_from_big_decimal;
+use serialization::{deserialize, serialize};
+use crate::utxo::payment_script;
+
 
 /// Dummy coin struct used in tests which functions are unimplemented but then mocked
 /// in specific test to emulate the required behavior
@@ -75,7 +88,7 @@ pub struct LnCoinImpl {
     /// https://komodoplatform.com/security-delayed-proof-of-work-dpow/
     requires_notarization: AtomicBool,
     /// RPC client
-    rpc_client: UtxoRpcClientEnum,
+    rpc_client: LnRpcClientEnum,
     /// ECDSA key pair
     key_pair: KeyPair,
     /// Lock the mutex when we deal with address utxos
@@ -215,7 +228,7 @@ impl LnCoinImpl {
 
     pub fn my_public_key(&self) -> &Public { self.key_pair.public() }
 
-    pub fn rpc_client(&self) -> &UtxoRpcClientEnum { &self.rpc_client }
+    pub fn rpc_client(&self) -> &LnRpcClientEnum { &self.rpc_client }
 
     pub fn display_address(&self, address: &Address) -> Result<String, String> {
         match &self.address_format {
