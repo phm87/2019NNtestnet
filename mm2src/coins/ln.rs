@@ -257,7 +257,11 @@ impl MarketCoinOps for LnCoin {
 
     fn my_address(&self) -> Result<String, String> { unimplemented!() }
 
-    fn my_balance(&self) -> Box<dyn Future<Item = BigDecimal, Error = String> + Send> { unimplemented!() }
+    fn my_balance(&self) -> Box<dyn Future<Item = BigDecimal, Error = String> + Send> { unimplemented!()
+            // API REST call to LND for onchain balance: https://localhost:8080/v1/balance/blockchain
+            // /v1/balance/channels
+            // https://api.lightning.community/#v1-balance-channels
+            }
 
     fn base_coin_balance(&self) -> Box<dyn Future<Item = BigDecimal, Error = String> + Send> { unimplemented!() }
 
