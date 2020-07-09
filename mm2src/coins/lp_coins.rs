@@ -434,7 +434,7 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 pub enum MmCoinEnum {
     UtxoCoin(UtxoCoin),
     EthCoin(EthCoin),
-    Ln(LnCoin),
+    LnCoin(LnCoin),
     Test(TestCoin),
 }
 
