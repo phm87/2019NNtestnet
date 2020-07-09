@@ -32,7 +32,6 @@ use futures::future::{FutureExt, TryFutureExt};
 use futures::lock::Mutex as AsyncMutex;
 use futures::stream::StreamExt;
 use futures01::future::Either;
-use futures01::Future;
 
 /// Dummy coin struct used in tests which functions are unimplemented but then mocked
 /// in specific test to emulate the required behavior
