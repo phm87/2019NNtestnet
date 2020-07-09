@@ -17,6 +17,23 @@ use script::{Builder, Opcode, Script, ScriptAddress, SignatureVersion, Transacti
 //#[derive(Clone, Debug)]
 //pub struct LnCoin {}
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "format")]
+enum LnAddressFormat {
+    /// Standard UTXO address format.
+    /// In Bitcoin Cash context the standard format also known as 'legacy'.
+    #[serde(rename = "standard")]
+    Standard,
+    /// Bitcoin Cash specific address format.
+    /// https://github.com/bitcoincashorg/bitcoincash.org/blob/master/spec/cashaddr.md
+    #[serde(rename = "cashaddress")]
+    CashAddress { network: String },
+}
+
+impl Default for LnAddressFormat {
+    fn default() -> Self { LnAddressFormat::Standard }
+}
+
 /// pImpl idiom.
 #[derive(Debug)]
 pub struct LnCoinImpl {
@@ -64,7 +81,7 @@ pub struct LnCoinImpl {
     /// Lock the mutex when we deal with address utxos
     my_address: Address,
     /// The address format indicates how to parse and display UTXO addresses over RPC calls
-    address_format: UtxoAddressFormat,
+    address_format: LnAddressFormat,
     /// Is current coin KMD asset chain?
     /// https://komodoplatform.atlassian.net/wiki/spaces/KPSD/pages/71729160/What+is+a+Parallel+Chain+Asset+Chain
     asset_chain: bool,
@@ -202,8 +219,8 @@ impl LnCoinImpl {
 
     pub fn display_address(&self, address: &Address) -> Result<String, String> {
         match &self.address_format {
-            UtxoAddressFormat::Standard => Ok(address.to_string()),
-            UtxoAddressFormat::CashAddress { network } => address
+            LnAddressFormat::Standard => Ok(address.to_string()),
+            LnAddressFormat::CashAddress { network } => address
                 .to_cashaddress(&network, self.pub_addr_prefix, self.p2sh_addr_prefix)
                 .and_then(|cashaddress| cashaddress.encode()),
         }
