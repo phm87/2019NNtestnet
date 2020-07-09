@@ -87,7 +87,7 @@ pub struct LnCoinImpl {
     estimate_fee_mode: Option<EstimateFeeMode>,
 }
 
-impl UtxoCoinImpl {
+impl LnCoinImpl {
     async fn get_tx_fee(&self) -> Result<ActualTxFee, JsonRpcError> {
         match &self.tx_fee {
             TxFee::Fixed(fee) => Ok(ActualTxFee::Fixed(*fee)),
@@ -211,6 +211,21 @@ impl UtxoCoinImpl {
             .await
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct LnCoin(Arc<LnCoinImpl>);
+impl Deref for LnCoin {
+    type Target = LnCoinImpl;
+    fn deref(&self) -> &LnCoinImpl { &*self.0 }
+}
+
+impl From<LnCoinImpl> for LnCoin {
+    fn from(coin: LnCoinImpl) -> LnCoin { LnCoin(Arc::new(coin)) }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 #[mockable]
 #[allow(clippy::forget_ref, clippy::forget_copy)]
