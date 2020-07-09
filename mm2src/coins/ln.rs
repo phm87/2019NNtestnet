@@ -27,6 +27,8 @@ pub use chain::Transaction as UtxoTx;
 use std::ops::Deref;
 use crate::utxo::rpc_clients::UtxoRpcClientEnum;
 use futures01::Future;
+use futures::channel::mpsc;
+use futures::compat::Future01CompatExt;
 
 /// Dummy coin struct used in tests which functions are unimplemented but then mocked
 /// in specific test to emulate the required behavior
