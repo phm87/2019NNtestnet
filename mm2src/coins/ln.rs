@@ -6,10 +6,16 @@ use common::mm_ctx::MmArc;
 use futures01::Future;
 use mocktopus::macros::*;
 
+use utxo::TxFee;
+use utxo::ActualTxFee;
+use keys::{Address, KeyPair, Private, Public, Secret, Type};
+use script::{Builder, Opcode, Script, ScriptAddress, SignatureVersion, TransactionInputSigner,
+             UnsignedTransactionInput};
+
 /// Dummy coin struct used in tests which functions are unimplemented but then mocked
 /// in specific test to emulate the required behavior
-#[derive(Clone, Debug)]
-pub struct LnCoin {}
+//#[derive(Clone, Debug)]
+//pub struct LnCoin {}
 
 /// pImpl idiom.
 #[derive(Debug)]
