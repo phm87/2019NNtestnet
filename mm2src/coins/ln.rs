@@ -26,9 +26,13 @@ use crate::utxo::payment_script;
 pub use chain::Transaction as UtxoTx;
 use std::ops::Deref;
 use crate::utxo::rpc_clients::UtxoRpcClientEnum;
-use futures01::Future;
 use futures::channel::mpsc;
 use futures::compat::Future01CompatExt;
+use futures::future::{FutureExt, TryFutureExt};
+use futures::lock::Mutex as AsyncMutex;
+use futures::stream::StreamExt;
+use futures01::future::Either;
+use futures01::Future;
 
 /// Dummy coin struct used in tests which functions are unimplemented but then mocked
 /// in specific test to emulate the required behavior
