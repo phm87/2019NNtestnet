@@ -209,6 +209,9 @@ pub fn mm2_main() {
     }
 }
 
+// LND
+extern crate protoc_grpcio;  
+
 /// Parses the `first_arg` as JSON and runs LP_main.
 /// Attempts to load the config from `MM2.json` file if `first_arg` is None
 ///
@@ -255,6 +258,16 @@ pub fn run_lp_main(first_arg: Option<&str>, ctx_cb: &dyn Fn(u32)) -> Result<(), 
         }
     }
 
+    let proto_file = "rpc.proto";
+    let proto_root = "src/proto";  
+    let rust_lnd = "src/lnd";    
+    println!("cargo:rerun-if-changed={}", proto_root);  
+    protoc_grpcio::compile_grpc_protos(
+          &[proto_file],
+          &[proto_root],
+          &rust_lnd,  
+    ).expect("Failed to compile gRPC definitions!");  
+    
     try_s!(lp_main(conf, ctx_cb));
     Ok(())
 }
