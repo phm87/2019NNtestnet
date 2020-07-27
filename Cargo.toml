@@ -123,6 +123,11 @@ js-sys = { version = "0.3.27", optional = true }
 wasm-bindgen-futures = { version = "0.4.1", optional = true }
 wasm-bindgen-test = { version = "0.3.1", optional = true }
 
+# LND
+grpcio = "0.3.0"
+protobuf = "2.0.2"
+futures = "0.1.16"
+
 [dependencies.web-sys]
 version = "0.3.4"
 features = [
