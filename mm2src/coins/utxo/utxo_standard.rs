@@ -386,6 +386,10 @@ impl MmCoin for UtxoStandardCoin {
         Box::new(utxo_common::withdraw(self.clone(), req).boxed().compat())
     }
 
+    fn withdraw_many(&self, req: WithdrawManyRequest) -> Box<dyn Future<Item = TransactionDetails, Error = String> + Send> {
+        Box::new(utxo_common::withdraw_many(self.clone(), req).boxed().compat())
+    }
+
     fn decimals(&self) -> u8 { utxo_common::decimals(&self.utxo_arc) }
 
     fn convert_to_address(&self, from: &str, to_address_format: Json) -> Result<String, String> {
