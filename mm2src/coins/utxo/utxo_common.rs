@@ -1307,6 +1307,103 @@ where
     })
 }
 
+pub async fn withdraw_many<T>(coin: T, req: WithdrawManyRequest) -> Result<TransactionDetails, String>
+where
+    T: AsRef<UtxoCoinFields> + UtxoCommonOps + MarketCoinOps,
+{
+    let to = try_s!(coin.address_from_str(&req.to));
+
+    let conf = &coin.as_ref().conf;
+    let is_p2pkh = to.prefix == conf.pub_addr_prefix && to.t_addr_prefix == conf.pub_t_addr_prefix;
+    let is_p2sh = to.prefix == conf.p2sh_addr_prefix && to.t_addr_prefix == conf.p2sh_t_addr_prefix && conf.segwit;
+
+    let script_pubkey = if is_p2pkh {
+        Builder::build_p2pkh(&to.hash)
+    } else if is_p2sh {
+        Builder::build_p2sh(&to.hash)
+    } else {
+        return ERR!("Address {} has invalid format", to);
+    };
+
+    if to.checksum_type != coin.as_ref().conf.checksum_type {
+        return ERR!(
+            "Address {} has invalid checksum type, it must be {:?}",
+            to,
+            coin.as_ref().conf.checksum_type
+        );
+    }
+
+    let script_pubkey = script_pubkey.to_bytes();
+
+    let _utxo_lock = UTXO_LOCK.lock().await;
+    let unspents = try_s!(coin
+        .ordered_mature_unspents(&coin.as_ref().my_address)
+        .compat()
+        .await
+        .map_err(|e| ERRL!("{}", e)));
+    let (value, fee_policy) = if req.max {
+        (
+            unspents.iter().fold(0, |sum, unspent| sum + unspent.value),
+            FeePolicy::DeductFromOutput(0),
+        )
+    } else {
+        (
+            try_s!(sat_from_big_decimal(&req.amount, coin.as_ref().decimals)),
+            FeePolicy::SendExact,
+        )
+    };
+    let outputs = vec![TransactionOutput { value, script_pubkey }];
+    let fee = match req.fee {
+        Some(WithdrawFee::UtxoFixed { amount }) => Some(ActualTxFee::Fixed(try_s!(sat_from_big_decimal(
+            &amount,
+            coin.as_ref().decimals
+        )))),
+        Some(WithdrawFee::UtxoPerKbyte { amount }) => Some(ActualTxFee::Dynamic(try_s!(sat_from_big_decimal(
+            &amount,
+            coin.as_ref().decimals
+        )))),
+        Some(_) => return ERR!("Unsupported input fee type"),
+        None => None,
+    };
+    let gas_fee = None;
+    let (unsigned, data) = try_s!(
+        coin.generate_transaction(unspents, outputs, fee_policy, fee, gas_fee)
+            .await
+    );
+    let prev_script = Builder::build_p2pkh(&coin.as_ref().my_address.hash);
+    let signed = try_s!(sign_tx(
+        unsigned,
+        &coin.as_ref().key_pair,
+        prev_script,
+        coin.as_ref().conf.signature_version,
+        coin.as_ref().conf.fork_id
+    ));
+    let fee_amount = data.fee_amount + data.unused_change.unwrap_or_default();
+    let fee_details = UtxoFeeDetails {
+        amount: big_decimal_from_sat(fee_amount as i64, coin.as_ref().decimals),
+    };
+    let my_address = try_s!(coin.my_address());
+    let to_address = try_s!(coin.display_address(&to));
+    Ok(TransactionDetails {
+        from: vec![my_address],
+        to: vec![to_address],
+        total_amount: big_decimal_from_sat(data.spent_by_me as i64, coin.as_ref().decimals),
+        spent_by_me: big_decimal_from_sat(data.spent_by_me as i64, coin.as_ref().decimals),
+        received_by_me: big_decimal_from_sat(data.received_by_me as i64, coin.as_ref().decimals),
+        my_balance_change: big_decimal_from_sat(
+            data.received_by_me as i64 - data.spent_by_me as i64,
+            coin.as_ref().decimals,
+        ),
+        tx_hash: signed.hash().reversed().to_vec().into(),
+        tx_hex: serialize(&signed).into(),
+        fee_details: Some(fee_details.into()),
+        block_height: 0,
+        coin: coin.as_ref().conf.ticker.clone(),
+        internal_id: vec![].into(),
+        timestamp: now_ms() / 1000,
+    })
+}
+
 pub fn decimals(coin: &UtxoCoinFields) -> u8 { coin.decimals }
 
 pub fn convert_to_address<T>(coin: &T, from: &str, to_address_format: Json) -> Result<String, String>
