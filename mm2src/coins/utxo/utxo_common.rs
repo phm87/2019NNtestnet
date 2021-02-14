@@ -1311,7 +1311,14 @@ pub async fn withdraw_many<T>(coin: T, req: WithdrawManyRequest) -> Result<Trans
 where
     T: AsRef<UtxoCoinFields> + UtxoCommonOps + MarketCoinOps,
 {
-    let to = try_s!(coin.address_from_str(&req.to));
+    let list = try_s!(coin.address_from_str(&req.list));
+    let to = try_s!(coin.address_from_str(&req.list));
+    let mut split = list.split(",");
+    // let vec: Vec<&str> = split.collect();
+    for s in split {
+      println!("{}", s)
+    }
+    let parsed = json::parse(list);
 
     let conf = &coin.as_ref().conf;
     let is_p2pkh = to.prefix == conf.pub_addr_prefix && to.t_addr_prefix == conf.pub_t_addr_prefix;
