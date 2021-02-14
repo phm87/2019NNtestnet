@@ -129,6 +129,7 @@ pub fn help() -> HyRes {
         stop()
         version
         withdraw(coin, amount, to)
+        withdraw_many(coin, list(amount, to))
     ",
     )
 }
