@@ -213,6 +213,10 @@ impl MmCoin for TestCoin {
         unimplemented!()
     }
 
+
+    fn withdraw_many(&self, req: WithdrawManyRequest) -> Box<dyn Future<Item = TransactionDetails, Error = String> + Send> {
+        unimplemented!()
+    }
     fn decimals(&self) -> u8 { unimplemented!() }
 
     fn convert_to_address(&self, from: &str, to_address_format: Json) -> Result<String, String> { unimplemented!() }
