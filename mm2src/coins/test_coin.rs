@@ -1,7 +1,7 @@
 use super::{HistorySyncState, MarketCoinOps, MmCoin, SwapOps, TradeFee, TransactionDetails, TransactionEnum,
             TransactionFut};
 use crate::{FeeApproxStage, FoundSwapTxSpend, TradePreimageError, TradePreimageValue, ValidateAddressResult,
-            WithdrawRequest};
+            WithdrawRequest, WithdrawManyRequest};
 use bigdecimal::BigDecimal;
 use common::mm_ctx::MmArc;
 use futures01::Future;
