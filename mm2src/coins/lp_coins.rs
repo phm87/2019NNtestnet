@@ -483,6 +483,8 @@ pub trait MmCoin: SwapOps + MarketCoinOps + fmt::Debug + Send + Sync + 'static {
 
     fn withdraw(&self, req: WithdrawRequest) -> Box<dyn Future<Item = TransactionDetails, Error = String> + Send>;
 
+    fn withdraw_many(&self, req: WithdrawManyRequest) -> Box<dyn Future<Item = TransactionDetails, Error = String> + Send>;
+
     /// Maximum number of digits after decimal point used to denominate integer coin units (satoshis, wei, etc.)
     fn decimals(&self) -> u8;
 
