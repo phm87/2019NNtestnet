@@ -309,6 +309,14 @@ pub struct WithdrawRequest {
     fee: Option<WithdrawFee>,
 }
 
+pub struct WithdrawManyRequest {
+    coin: String,
+    list: String,
+    #[serde(default)]
+    max: bool,
+    fee: Option<WithdrawFee>,
+}
+
 /// Please note that no type should have the same structure as another type,
 /// because this enum has the `untagged` deserialization.
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -977,6 +985,19 @@ pub async fn withdraw(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String
     };
     let withdraw_req: WithdrawRequest = try_s!(json::from_value(req));
     let res = try_s!(coin.withdraw(withdraw_req).compat().await);
+    let body = try_s!(json::to_vec(&res));
+    Ok(try_s!(Response::builder().body(body)))
+}
+
+pub async fn withdraw_many(ctx: MmArc, req: Json) -> Result<Response<Vec<u8>>, String> {
+    let ticker = try_s!(req["coin"].as_str().ok_or("No 'coin' field")).to_owned();
+    let coin = match lp_coinfind(&ctx, &ticker).await {
+        Ok(Some(t)) => t,
+        Ok(None) => return ERR!("No such coin: {}", ticker),
+        Err(err) => return ERR!("!lp_coinfind({}): {}", ticker, err),
+    };
+    let withdraw_many_req: WithdrawManyRequest = try_s!(json::from_value(req));
+    let res = try_s!(coin.withdraw_many(withdraw_many_req).compat().await);
     let body = try_s!(json::to_vec(&res));
     Ok(try_s!(Response::builder().body(body)))
 }
