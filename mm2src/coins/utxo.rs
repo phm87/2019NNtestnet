@@ -71,7 +71,7 @@ use self::rpc_clients::{ElectrumClient, ElectrumClientImpl, EstimateFeeMethod, E
 use super::{CoinTransportMetrics, CoinsContext, FeeApproxStage, FoundSwapTxSpend, HistorySyncState, MarketCoinOps,
             MmCoin, RpcClientType, RpcTransportEventHandler, RpcTransportEventHandlerShared, TradeFee,
             TradePreimageError, Transaction, TransactionDetails, TransactionEnum, TransactionFut, WithdrawFee,
-            WithdrawRequest};
+            WithdrawRequest, WithdrawManyRequest};
 use crate::utxo::rpc_clients::{ElectrumRpcRequest, NativeClientImpl};
 use crate::utxo::utxo_common::display_address;
 
